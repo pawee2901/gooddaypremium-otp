@@ -242,7 +242,7 @@ def get_otp():
                 return jsonify({
                     'success': False,
                     'message': f'ไม่สามารถเชื่อมต่อ Maily Space ได้ (โค้ดสถานะ: {response.status_code})'
-                }), 400
+                }), 200
                 
             api_data = response.json()
             mails = api_data.get("data", {}).get("mails", [])
@@ -251,7 +251,7 @@ def get_otp():
                 return jsonify({
                     'success': False,
                     'message': f'ไม่พบกล่องข้อความใดๆ สำหรับอีเมล {email_input} ในระบบ'
-                }), 400
+                }), 200
                 
             matching_mails = []
             for mail in mails:
@@ -271,7 +271,7 @@ def get_otp():
                 return jsonify({
                     'success': False,
                     'message': f'ไม่พบอีเมลสำหรับ {app_name} ในกล่องข้อความนี้ (กรุณากดขอรหัส OTP จากแอปปลายทางอีกครั้ง)'
-                }), 400
+                }), 200
                 
             return jsonify({
                 'success': True,
@@ -284,12 +284,12 @@ def get_otp():
             return jsonify({
                 'success': False,
                 'message': f'เครือข่ายขัดข้องในการดึงจดหมาย: {str(e)}'
-            }), 400
+            }), 200
         except Exception as e:
             return jsonify({
                 'success': False,
                 'message': f'เกิดข้อผิดพลาดในการดึง OTP: {str(e)}'
-            }), 400
+            }), 200
 
     # -------------------------------------------------------------------------
     # ช่องทาง B: การดึงข้อมูลผ่านระบบ Cloud Run ของคุณลูกค้า (กรณีเป็น Hotmail/Gmail ฯลฯ)
@@ -308,7 +308,7 @@ def get_otp():
                 return jsonify({
                     'success': False,
                     'message': f'ระบบคลาวด์ตอบกลับขัดข้อง (โค้ดสถานะ: {response.status_code})'
-                }), 400
+                }), 200
                 
             api_data = response.json()
             emails = api_data.get("emails", [])
@@ -317,7 +317,7 @@ def get_otp():
                 return jsonify({
                     'success': False,
                     'message': f'ไม่พบอีเมลยืนยันตัวตนล่าสุดของ {app_name} ส่งมายัง {email_input} (กรุณากดส่งรหัส OTP หรือตรวจสอบว่าคุณลงทะเบียนเมลนี้แล้ว)'
-                }), 400
+                }), 200
                 
             matching_mails = []
             for mail in emails:
@@ -344,7 +344,7 @@ def get_otp():
                 return jsonify({
                     'success': False,
                     'message': f'ไม่พบอีเมลยืนยันตัวตนล่าสุดสำหรับ {app_name}'
-                }), 400
+                }), 200
                 
             return jsonify({
                 'success': True,
@@ -357,12 +357,12 @@ def get_otp():
             return jsonify({
                 'success': False,
                 'message': f'เครือข่ายเชื่อมต่อระบบคลาวด์ขัดข้อง: {str(e)}'
-            }), 400
+            }), 200
         except Exception as e:
             return jsonify({
                 'success': False,
                 'message': f'เกิดปัญหาในการประมวลผลข้อความ: {str(e)}'
-            }), 400
+            }), 200
 
 # =========================================================================
 # Route 3: Admin Dashboard (Authentication & Settings Panel)
