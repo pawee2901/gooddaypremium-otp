@@ -156,6 +156,55 @@
                             <span>เลือกไฟล์รูปภาพ</span>
                         </label>
                         <input type="file" id="logoFileInput" accept="image/*" class="hidden" onchange="uploadLogoFile()">
+                </div>
+            </div>
+
+            <!-- หมวด A.2: การปรับแต่งโลโก้แอปพลิเคชัน (App Logos Upload) -->
+            <div class="space-y-4">
+                <div class="border-b border-gray-50 pb-1 flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                    <i class="fa-solid fa-mobile-screen-button text-gray-400"></i>
+                    <span>อัปโหลดโลโก้แอปพลิเคชันภาพใหม่ (Disney+ & TrueID)</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Disney+ Logo -->
+                    <div class="flex items-center gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                        <img src="{% if disney_logo_path %}{{ disney_logo_path }}{% else %}https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg{% endif %}" 
+                             id="dashboardDisneyPreview" alt="Disney+ logo preview" 
+                             class="w-16 h-16 rounded-2xl object-contain bg-white border-2 border-white shadow-sm flex-shrink-0 p-1">
+                        
+                        <div class="flex-1 min-w-0 space-y-2">
+                            <p class="text-[11px] font-extrabold text-gray-700 leading-none">แอป Disney+</p>
+                            <p class="text-[9px] text-gray-400 leading-tight">สัดส่วน 1:1 หรือแนวนอน PNG, JPG, WEBP</p>
+                            
+                            <label for="disneyFileInput" class="inline-flex items-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 text-gray-700 font-bold text-[10px] px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-[0.98]">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span>เลือกรูปภาพ</span>
+                            </label>
+                            <input type="file" id="disneyFileInput" accept="image/*" class="hidden" onchange="uploadDisneyFile()">
+                        </div>
+                    </div>
+
+                    <!-- TrueID Logo -->
+                    <div class="flex items-center gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                        <div id="dashboardTrueIDContainer" class="w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden {% if trueid_logo_path %}bg-white{% else %}bg-[#E50914]{% endif %}">
+                            {% if trueid_logo_path %}
+                            <img src="{{ trueid_logo_path }}" id="dashboardTrueIDPreview" alt="TrueID logo preview" class="w-full h-full object-cover">
+                            {% else %}
+                            <span id="dashboardTrueIDText" class="text-[12px] font-black text-white uppercase tracking-tighter select-none">trueID</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex-1 min-w-0 space-y-2">
+                            <p class="text-[11px] font-extrabold text-gray-700 leading-none">แอป TrueID</p>
+                            <p class="text-[9px] text-gray-400 leading-tight">แนะนำรูปภาพ 1:1 PNG, JPG, WEBP</p>
+                            
+                            <label for="trueidFileInput" class="inline-flex items-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 text-gray-700 font-bold text-[10px] px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-[0.98]">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span>เลือกรูปภาพ</span>
+                            </label>
+                            <input type="file" id="trueidFileInput" accept="image/*" class="hidden" onchange="uploadTrueIDFile()">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -349,6 +398,74 @@
                 showNotification('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลดรูปภาพ', false);
             } finally {
                 logoFileInput.value = ''; // รีเซ็ตอินพุตให้เลือกไฟล์เดิมซ้ำได้อีก
+            }
+        }
+
+        async function uploadDisneyFile() {
+            const disneyFileInput = document.getElementById('disneyFileInput');
+            const file = disneyFileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            showNotification('กำลังอัปโหลดรูปภาพโลโก้ Disney+ ใหม่...', true);
+
+            try {
+                const response = await fetch('/admin/upload_disney_logo', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('อัปโหลดและเปลี่ยนโลโก้ Disney+ สำเร็จ!', true);
+                    const cacheBusterPath = `${data.disney_logo_path}?t=${Date.now()}`;
+                    const dashboardDisneyPreview = document.getElementById('dashboardDisneyPreview');
+                    if (dashboardDisneyPreview) dashboardDisneyPreview.src = cacheBusterPath;
+                } else {
+                    showNotification(data.message || 'อัปโหลดภาพไม่สำเร็จ', false);
+                }
+            } catch (error) {
+                showNotification('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลดรูปภาพ', false);
+            } finally {
+                disneyFileInput.value = '';
+            }
+        }
+
+        async function uploadTrueIDFile() {
+            const trueidFileInput = document.getElementById('trueidFileInput');
+            const file = trueidFileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            showNotification('กำลังอัปโหลดรูปภาพโลโก้ TrueID ใหม่...', true);
+
+            try {
+                const response = await fetch('/admin/upload_trueid_logo', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('อัปโหลดและเปลี่ยนโลโก้ TrueID สำเร็จ!', true);
+                    const cacheBusterPath = `${data.trueid_logo_path}?t=${Date.now()}`;
+                    
+                    const dashboardTrueIDContainer = document.getElementById('dashboardTrueIDContainer');
+                    if (dashboardTrueIDContainer) {
+                        dashboardTrueIDContainer.className = "w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden bg-white";
+                        dashboardTrueIDContainer.innerHTML = `<img src="${cacheBusterPath}" id="dashboardTrueIDPreview" alt="TrueID logo preview" class="w-full h-full object-cover">`;
+                    }
+                } else {
+                    showNotification(data.message || 'อัปโหลดภาพไม่สำเร็จ', false);
+                }
+            } catch (error) {
+                showNotification('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลดรูปภาพ', false);
+            } finally {
+                trueidFileInput.value = '';
             }
         }
 

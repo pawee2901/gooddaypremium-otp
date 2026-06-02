@@ -21,6 +21,8 @@ def load_config():
         default_config = {
             "shop_name": "gooddaypremium",
             "logo_path": "/static/logo.jpg",
+            "disney_logo_path": "",
+            "trueid_logo_path": "",
             "admin_username": "admin",
             "admin_password": "admin1234"
         }
@@ -34,6 +36,8 @@ def load_config():
         return {
             "shop_name": "gooddaypremium",
             "logo_path": "/static/logo.jpg",
+            "disney_logo_path": "",
+            "trueid_logo_path": "",
             "admin_username": "admin",
             "admin_password": "admin1234"
         }
@@ -180,7 +184,11 @@ def extract_otp_code(html_body):
 @app.route('/')
 def index():
     config = load_config()
-    return render_template('index.html', shop_name=config.get('shop_name', 'gooddaypremium'), logo_path=config.get('logo_path', '/static/logo.jpg'))
+    return render_template('index.html', 
+                           shop_name=config.get('shop_name', 'gooddaypremium'), 
+                           logo_path=config.get('logo_path', '/static/logo.jpg'),
+                           disney_logo_path=config.get('disney_logo_path', ''),
+                           trueid_logo_path=config.get('trueid_logo_path', ''))
 
 # =========================================================================
 # Route 2: หลังบ้านประมวลผลค้นหา OTP (POST Asynchronous)
@@ -370,7 +378,12 @@ def get_otp():
 @app.route('/admin')
 def admin():
     config = load_config()
-    return render_template('admin.html', shop_name=config.get('shop_name', 'gooddaypremium'), logo_path=config.get('logo_path', '/static/logo.jpg'), logged_in=session.get('admin_logged_in', False))
+    return render_template('admin.html', 
+                           shop_name=config.get('shop_name', 'gooddaypremium'), 
+                           logo_path=config.get('logo_path', '/static/logo.jpg'),
+                           disney_logo_path=config.get('disney_logo_path', ''),
+                           trueid_logo_path=config.get('trueid_logo_path', ''),
+                           logged_in=session.get('admin_logged_in', False))
 
 @app.route('/admin/login', methods=['POST'])
 def admin_login():
@@ -453,6 +466,84 @@ def admin_upload_logo():
     save_config(config)
     
     return jsonify({'success': True, 'message': 'อัปโหลดโลโก้สำเร็จ', 'logo_path': new_logo_path})
+
+@app.route('/admin/upload_disney_logo', methods=['POST'])
+def admin_upload_disney_logo():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+        
+    if 'logo' not in request.files:
+        return jsonify({'success': False, 'message': 'ไม่พบไฟล์ภาพ'}), 400
+        
+    file = request.files['logo']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'กรุณาเลือกไฟล์ภาพ'}), 400
+        
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext not in allowed_extensions:
+        return jsonify({'success': False, 'message': 'ไฟล์ต้องเป็นประเภทรูปภาพเท่านั้น (png, jpg, jpeg, gif, webp)'}), 400
+        
+    filename = f"logo_disney_{int(time.time())}.{ext}"
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    
+    config = load_config()
+    old_logo_path = config.get('disney_logo_path', '')
+    if old_logo_path:
+        old_full_path = os.path.join(static_dir, old_logo_path.split('/static/')[-1])
+        if os.path.exists(old_full_path):
+            try:
+                os.remove(old_full_path)
+            except Exception:
+                pass
+
+    file_path = os.path.join(static_dir, filename)
+    file.save(file_path)
+    
+    new_logo_path = f"/static/{filename}"
+    config['disney_logo_path'] = new_logo_path
+    save_config(config)
+    
+    return jsonify({'success': True, 'message': 'อัปโหลดโลโก้ Disney+ สำเร็จ', 'disney_logo_path': new_logo_path})
+
+@app.route('/admin/upload_trueid_logo', methods=['POST'])
+def admin_upload_trueid_logo():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+        
+    if 'logo' not in request.files:
+        return jsonify({'success': False, 'message': 'ไม่พบไฟล์ภาพ'}), 400
+        
+    file = request.files['logo']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'กรุณาเลือกไฟล์ภาพ'}), 400
+        
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext not in allowed_extensions:
+        return jsonify({'success': False, 'message': 'ไฟล์ต้องเป็นประเภทรูปภาพเท่านั้น (png, jpg, jpeg, gif, webp)'}), 400
+        
+    filename = f"logo_trueid_{int(time.time())}.{ext}"
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    
+    config = load_config()
+    old_logo_path = config.get('trueid_logo_path', '')
+    if old_logo_path:
+        old_full_path = os.path.join(static_dir, old_logo_path.split('/static/')[-1])
+        if os.path.exists(old_full_path):
+            try:
+                os.remove(old_full_path)
+            except Exception:
+                pass
+
+    file_path = os.path.join(static_dir, filename)
+    file.save(file_path)
+    
+    new_logo_path = f"/static/{filename}"
+    config['trueid_logo_path'] = new_logo_path
+    save_config(config)
+    
+    return jsonify({'success': True, 'message': 'อัปโหลดโลโก้ TrueID สำเร็จ', 'trueid_logo_path': new_logo_path})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

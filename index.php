@@ -3,6 +3,8 @@ $config_path = __DIR__ . '/config.json';
 $config = [
     'shop_name' => 'gooddaypremium',
     'logo_path' => '/static/logo.jpg',
+    'disney_logo_path' => '',
+    'trueid_logo_path' => '',
     'admin_username' => 'admin',
     'admin_password' => 'admin1234'
 ];
@@ -126,7 +128,11 @@ if (file_exists($config_path)) {
                 <div onclick="selectApp('Disney+')" 
                      class="app-btn bg-[#F0F7FF] border border-[#D6E9FF] rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group">
                     <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-[#D6E9FF] flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:border-[#D6E9FF]/10">
+                        <?php if (!empty($config['disney_logo_path'])): ?>
+                        <img src="<?php echo htmlspecialchars($config['disney_logo_path']); ?>" alt="Disney+ logo" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-115 group-hover:rotate-1 group-hover:drop-shadow-[0_0_8px_rgba(30,58,138,0.5)]">
+                        <?php else: ?>
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-12 h-6 object-contain transition-all duration-300 group-hover:scale-115 group-hover:rotate-1 group-hover:drop-shadow-[0_0_8px_rgba(30,58,138,0.5)]">
+                        <?php endif; ?>
                     </div>
                     <span class="text-base md:text-lg font-extrabold text-gray-800">Disney+</span>
                 </div>
@@ -134,8 +140,12 @@ if (file_exists($config_path)) {
                 <!-- 2. TrueID Card -->
                 <div onclick="selectApp('TrueID')" 
                      class="app-btn bg-[#FFF5FA] border border-[#FFE2F3] rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group">
-                    <div class="w-14 h-14 bg-[#E50914] rounded-2xl shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 border border-[#E50914] transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
+                    <div class="w-14 h-14 <?php echo !empty($config['trueid_logo_path']) ? 'bg-white border-[#FFE2F3]' : 'bg-[#E50914] border-[#E50914]'; ?> rounded-2xl shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 border transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
+                        <?php if (!empty($config['trueid_logo_path'])): ?>
+                        <img src="<?php echo htmlspecialchars($config['trueid_logo_path']); ?>" alt="TrueID logo" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
+                        <?php else: ?>
                         <span class="text-[12px] font-black text-white tracking-tighter leading-none select-none uppercase">trueID</span>
+                        <?php endif; ?>
                     </div>
                     <span class="text-base md:text-lg font-extrabold text-gray-800">TrueID</span>
                 </div>

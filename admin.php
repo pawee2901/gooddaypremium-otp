@@ -5,6 +5,8 @@ $config_path = __DIR__ . '/config.json';
 $config = [
     'shop_name' => 'gooddaypremium',
     'logo_path' => '/static/logo.jpg',
+    'disney_logo_path' => '',
+    'trueid_logo_path' => '',
     'admin_username' => 'admin',
     'admin_password' => 'admin1234'
 ];
@@ -134,6 +136,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['logo_path'] = $new_logo_path;
             file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             echo json_encode(['success' => true, 'message' => 'อัปโหลดโลโก้สำเร็จ', 'logo_path' => $new_logo_path]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'ไม่สามารถเซฟไฟล์รูปภาพลงโฟลเดอร์ static ได้']);
+        }
+        exit;
+    }
+
+    if ($action === 'upload_disney_logo') {
+        header('Content-Type: application/json');
+        if (!$logged_in) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'ไม่มีสิทธิ์เข้าถึง']);
+            exit;
+        }
+
+        if (!isset($_FILES['logo'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ไม่พบไฟล์ภาพ']);
+            exit;
+        }
+
+        $file = $_FILES['logo'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'อัปโหลดล้มเหลว รหัสข้อผิดพลาด: ' . $file['error']]);
+            exit;
+        }
+
+        $allowed_extensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $allowed_extensions)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ไฟล์ต้องเป็นประเภทรูปภาพเท่านั้น (png, jpg, jpeg, gif, webp)']);
+            exit;
+        }
+
+        // ตั้งชื่อไฟล์ภาพใหม่เป็นแบบ Timestamp เพื่อป้องกัน Caching
+        $filename = 'logo_disney_' . time() . '.' . $ext;
+        $static_dir = __DIR__ . '/static/';
+
+        if (!is_dir($static_dir)) {
+            mkdir($static_dir, 0755, true);
+        }
+
+        // ลบไฟล์โลโก้เดิมทิ้งเพื่อไม่ให้ขยะรกเซิร์ฟเวอร์
+        $old_logo_path = isset($config['disney_logo_path']) ? $config['disney_logo_path'] : '';
+        if (!empty($old_logo_path)) {
+            $old_parts = explode('/static/', $old_logo_path);
+            $old_file = end($old_parts);
+            $old_full_path = $static_dir . $old_file;
+            if (file_exists($old_full_path)) {
+                @unlink($old_full_path);
+            }
+        }
+
+        $target_path = $static_dir . $filename;
+        if (move_uploaded_file($file['tmp_name'], $target_path)) {
+            $new_logo_path = '/static/' . $filename;
+            $config['disney_logo_path'] = $new_logo_path;
+            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            echo json_encode(['success' => true, 'message' => 'อัปโหลดโลโก้ Disney+ สำเร็จ', 'disney_logo_path' => $new_logo_path]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'ไม่สามารถเซฟไฟล์รูปภาพลงโฟลเดอร์ static ได้']);
+        }
+        exit;
+    }
+
+    if ($action === 'upload_trueid_logo') {
+        header('Content-Type: application/json');
+        if (!$logged_in) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'ไม่มีสิทธิ์เข้าถึง']);
+            exit;
+        }
+
+        if (!isset($_FILES['logo'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ไม่พบไฟล์ภาพ']);
+            exit;
+        }
+
+        $file = $_FILES['logo'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'อัปโหลดล้มเหลว รหัสข้อผิดพลาด: ' . $file['error']]);
+            exit;
+        }
+
+        $allowed_extensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $allowed_extensions)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ไฟล์ต้องเป็นประเภทรูปภาพเท่านั้น (png, jpg, jpeg, gif, webp)']);
+            exit;
+        }
+
+        // ตั้งชื่อไฟล์ภาพใหม่เป็นแบบ Timestamp เพื่อป้องกัน Caching
+        $filename = 'logo_trueid_' . time() . '.' . $ext;
+        $static_dir = __DIR__ . '/static/';
+
+        if (!is_dir($static_dir)) {
+            mkdir($static_dir, 0755, true);
+        }
+
+        // ลบไฟล์โลโก้เดิมทิ้งเพื่อไม่ให้ขยะรกเซิร์ฟเวอร์
+        $old_logo_path = isset($config['trueid_logo_path']) ? $config['trueid_logo_path'] : '';
+        if (!empty($old_logo_path)) {
+            $old_parts = explode('/static/', $old_logo_path);
+            $old_file = end($old_parts);
+            $old_full_path = $static_dir . $old_file;
+            if (file_exists($old_full_path)) {
+                @unlink($old_full_path);
+            }
+        }
+
+        $target_path = $static_dir . $filename;
+        if (move_uploaded_file($file['tmp_name'], $target_path)) {
+            $new_logo_path = '/static/' . $filename;
+            $config['trueid_logo_path'] = $new_logo_path;
+            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            echo json_encode(['success' => true, 'message' => 'อัปโหลดโลโก้ TrueID สำเร็จ', 'trueid_logo_path' => $new_logo_path]);
         } else {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'ไม่สามารถเซฟไฟล์รูปภาพลงโฟลเดอร์ static ได้']);
@@ -308,6 +434,56 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                             <span>เลือกไฟล์รูปภาพ</span>
                         </label>
                         <input type="file" id="logoFileInput" accept="image/*" class="hidden" onchange="uploadLogoFile()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- หมวด A.2: การปรับแต่งโลโก้แอปพลิเคชัน (App Logos Upload) -->
+            <div class="space-y-4">
+                <div class="border-b border-gray-50 pb-1 flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                    <i class="fa-solid fa-mobile-screen-button text-gray-400"></i>
+                    <span>อัปโหลดโลโก้แอปพลิเคชันภาพใหม่ (Disney+ & TrueID)</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Disney+ Logo -->
+                    <div class="flex items-center gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                        <img src="<?php echo !empty($config['disney_logo_path']) ? htmlspecialchars($config['disney_logo_path']) : 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg'; ?>" 
+                             id="dashboardDisneyPreview" alt="Disney+ logo preview" 
+                             class="w-16 h-16 rounded-2xl object-contain bg-white border-2 border-white shadow-sm flex-shrink-0 p-1">
+                        
+                        <div class="flex-1 min-w-0 space-y-2">
+                            <p class="text-[11px] font-extrabold text-gray-700 leading-none">แอป Disney+</p>
+                            <p class="text-[9px] text-gray-400 leading-tight">สัดส่วน 1:1 หรือแนวนอน PNG, JPG, WEBP</p>
+                            
+                            <label for="disneyFileInput" class="inline-flex items-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 text-gray-700 font-bold text-[10px] px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-[0.98]">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span>เลือกรูปภาพ</span>
+                            </label>
+                            <input type="file" id="disneyFileInput" accept="image/*" class="hidden" onchange="uploadDisneyFile()">
+                        </div>
+                    </div>
+
+                    <!-- TrueID Logo -->
+                    <div class="flex items-center gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                        <div id="dashboardTrueIDContainer" class="w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden <?php echo !empty($config['trueid_logo_path']) ? 'bg-white' : 'bg-[#E50914]'; ?>">
+                            <?php if (!empty($config['trueid_logo_path'])): ?>
+                            <img src="<?php echo htmlspecialchars($config['trueid_logo_path']); ?>" id="dashboardTrueIDPreview" alt="TrueID logo preview" class="w-full h-full object-cover">
+                            <?php else: ?>
+                            <span id="dashboardTrueIDText" class="text-[12px] font-black text-white uppercase tracking-tighter select-none">trueID</span>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="flex-1 min-w-0 space-y-2">
+                            <p class="text-[11px] font-extrabold text-gray-700 leading-none">แอป TrueID</p>
+                            <p class="text-[9px] text-gray-400 leading-tight">แนะนำรูปภาพ 1:1 PNG, JPG, WEBP</p>
+                            
+                            <label for="trueidFileInput" class="inline-flex items-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 text-gray-700 font-bold text-[10px] px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-[0.98]">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span>เลือกรูปภาพ</span>
+                            </label>
+                            <input type="file" id="trueidFileInput" accept="image/*" class="hidden" onchange="uploadTrueIDFile()">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -504,6 +680,74 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 showNotification('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลดรูปภาพ', false);
             } finally {
                 logoFileInput.value = ''; // รีเซ็ตอินพุตให้เลือกไฟล์เดิมซ้ำได้อีก
+            }
+        }
+
+        async function uploadDisneyFile() {
+            const disneyFileInput = document.getElementById('disneyFileInput');
+            const file = disneyFileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            showNotification('กำลังอัปโหลดรูปภาพโลโก้ Disney+ ใหม่...', true);
+
+            try {
+                const response = await fetch('admin.php?action=upload_disney_logo', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('อัปโหลดและเปลี่ยนโลโก้ Disney+ สำเร็จ!', true);
+                    const cacheBusterPath = `${data.disney_logo_path}?t=${Date.now()}`;
+                    const dashboardDisneyPreview = document.getElementById('dashboardDisneyPreview');
+                    if (dashboardDisneyPreview) dashboardDisneyPreview.src = cacheBusterPath;
+                } else {
+                    showNotification(data.message || 'อัปโหลดภาพไม่สำเร็จ', false);
+                }
+            } catch (error) {
+                showNotification('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลดรูปภาพ', false);
+            } finally {
+                disneyFileInput.value = '';
+            }
+        }
+
+        async function uploadTrueIDFile() {
+            const trueidFileInput = document.getElementById('trueidFileInput');
+            const file = trueidFileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            showNotification('กำลังอัปโหลดรูปภาพโลโก้ TrueID ใหม่...', true);
+
+            try {
+                const response = await fetch('admin.php?action=upload_trueid_logo', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('อัปโหลดและเปลี่ยนโลโก้ TrueID สำเร็จ!', true);
+                    const cacheBusterPath = `${data.trueid_logo_path}?t=${Date.now()}`;
+                    
+                    const dashboardTrueIDContainer = document.getElementById('dashboardTrueIDContainer');
+                    if (dashboardTrueIDContainer) {
+                        dashboardTrueIDContainer.className = "w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden bg-white";
+                        dashboardTrueIDContainer.innerHTML = `<img src="${cacheBusterPath}" id="dashboardTrueIDPreview" alt="TrueID logo preview" class="w-full h-full object-cover">`;
+                    }
+                } else {
+                    showNotification(data.message || 'อัปโหลดภาพไม่สำเร็จ', false);
+                }
+            } catch (error) {
+                showNotification('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลดรูปภาพ', false);
+            } finally {
+                trueidFileInput.value = '';
             }
         }
 

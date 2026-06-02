@@ -1,6 +1,8 @@
 {
     "shop_name": "หมวย",
     "logo_path": "/static/logo_custom_1780392228.jpg",
+    "disney_logo_path": "",
+    "trueid_logo_path": "",
     "admin_username": "admin1",
     "admin_password": "123456789"
 }
