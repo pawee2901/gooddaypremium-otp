@@ -1,0 +1,1943 @@
+{
+  "-Ot5mMTlxT9JGe1XOyQk": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 23_20260520222951.png",
+          "path": "app/1779304645359-ไม่มีชื่อ 23_20260520222951.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779304645359-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2023_20260520222951.png?alt=media&token=c4dd1434-91b2-4c73-8d3c-a1e279a78ee2"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ffffff00"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 23_20260520222910.png",
+          "path": "app/1779304657102-ไม่มีชื่อ 23_20260520222910.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779304657102-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2023_20260520222910.png?alt=media&token=f5674ff9-eec1-4f1a-9b45-e97a0e6e242a"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ffffff00"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 23_20260520223121.png",
+          "path": "app/1779304671103-ไม่มีชื่อ 23_20260520223121.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779304671103-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2023_20260520223121.png?alt=media&token=3a4abf03-62aa-4948-b08a-3d5b11fa086f"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ffffff00"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 26_20260521022015.png",
+          "path": "app/1779304831412-ไม่มีชื่อ 26_20260521022015.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779304831412-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2026_20260521022015.png?alt=media&token=eb41e179-d3cf-40c9-a859-4c7caaea9667"
+        },
+        "name": "GPT",
+        "shadowColor": "#ffffff00"
+      }
+    ],
+    "backgroundImage": {
+      "name": "2dcf7e98-b709-4f6a-995a-585ed4e133bc.jfif",
+      "path": "background/1779304407100-2dcf7e98-b709-4f6a-995a-585ed4e133bc.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779304407100-2dcf7e98-b709-4f6a-995a-585ed4e133bc.jfif?alt=media&token=1875991f-f4e6-470a-97d0-943a44e5a64a"
+    },
+    "backgroundImageButton": {
+      "name": "701265931_1198840755608949_7166172217004060615_n.jpg",
+      "path": "button/1779305031103-701265931_1198840755608949_7166172217004060615_n.jpg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779305031103-701265931_1198840755608949_7166172217004060615_n.jpg?alt=media&token=ee30bb6d-3dc9-4ca1-88de-193be6adc620"
+    },
+    "cardBackground": {
+      "name": "528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "path": "appCard/1779308847246-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779308847246-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif?alt=media&token=c49c706e-e789-464b-ae48-d0d1daa3963c"
+    },
+    "cardShadowColor": "#964a67",
+    "color": "#b14d7d",
+    "colorBackgroundInputEmail": "#f0e6ee",
+    "colorBorderInputEmail": "#dd6969",
+    "colorShadowButton": "#ffffff00",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#b14d7d",
+    "colorTextInputEmail": "#af2a7e",
+    "colorTextTitleCard": "#b14d7d",
+    "createdAt": 1779304068647,
+    "expiredDate": "2027-05-21",
+    "id": "-Ot5mMTlxT9JGe1XOyQk",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "9759fcfa-f67e-45c6-a82b-89ca00c60a14-removebg-preview.png",
+      "path": "logo/1779304454718-9759fcfa-f67e-45c6-a82b-89ca00c60a14-removebg-preview.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779304454718-9759fcfa-f67e-45c6-a82b-89ca00c60a14-removebg-preview.png?alt=media&token=64088e7b-ef30-48e2-95cb-840280c33920"
+    },
+    "opacityCard": 0.9,
+    "shopName": "Shukies",
+    "updatedAt": 1779369222331,
+    "url": "shukiesotp.tomoru.fun"
+  },
+  "-Ot5n3KOSpJVMIt7pYgn": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 23_20260520222951.png",
+          "path": "app/1779306910021-ไม่มีชื่อ 23_20260520222951.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779306910021-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2023_20260520222951.png?alt=media&token=cf61afe5-3f7c-41c5-8e38-c1d7859024fc"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 23_20260520222910.png",
+          "path": "app/1779306917320-ไม่มีชื่อ 23_20260520222910.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779306917320-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2023_20260520222910.png?alt=media&token=ace85be9-40b8-4460-ad9c-a58da115ff08"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 23_20260520223121.png",
+          "path": "app/1779306928363-ไม่มีชื่อ 23_20260520223121.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779306928363-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2023_20260520223121.png?alt=media&token=a3082928-ce7a-4e56-a5e4-e4916cf9a515"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 26_20260521022015.png",
+          "path": "app/1779306936648-ไม่มีชื่อ 26_20260521022015.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779306936648-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2026_20260521022015.png?alt=media&token=e56dcc92-824f-4961-9afc-edf0e74a8ced"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "692813759_1343992407667456_7364934126479474032_n.jpg",
+      "path": "background/1779306452557-692813759_1343992407667456_7364934126479474032_n.jpg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779306452557-692813759_1343992407667456_7364934126479474032_n.jpg?alt=media&token=6750f1c4-c2b9-4148-915a-01f584a6c875"
+    },
+    "backgroundImageButton": {
+      "name": "701265931_1198840755608949_7166172217004060615_n.jpg",
+      "path": "button/1779306471291-701265931_1198840755608949_7166172217004060615_n.jpg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779306471291-701265931_1198840755608949_7166172217004060615_n.jpg?alt=media&token=1c223ce7-345d-4288-8ebc-43e31dccd4ba"
+    },
+    "cardBackground": {
+      "name": "701265931_1198840755608949_7166172217004060615_n.jpg",
+      "path": "appCard/1779306461092-701265931_1198840755608949_7166172217004060615_n.jpg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779306461092-701265931_1198840755608949_7166172217004060615_n.jpg?alt=media&token=008266e3-13de-4339-b900-0815e720c486"
+    },
+    "color": "#9e0059",
+    "colorBorderInputEmail": "#9e0059",
+    "colorTextDiscriptionCard": "#9e0059",
+    "colorTextInputEmail": "#9e0059",
+    "colorTextTitleCard": "#9e0059",
+    "createdAt": 1779304252367,
+    "expiredDate": "2027-05-21",
+    "id": "-Ot5n3KOSpJVMIt7pYgn",
+    "isOn": true,
+    "logo": {
+      "name": "ไม่มีชื่อ 28_20260521024444.png",
+      "path": "logo/1779306390103-ไม่มีชื่อ 28_20260521024444.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779306390103-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2028_20260521024444.png?alt=media&token=4bf2be05-290f-49ce-82d6-c638ed5baa0d"
+    },
+    "shopName": "PawiStreamX",
+    "updatedAt": 1779369283215,
+    "url": "pawistreamx.tomoru.fun"
+  },
+  "-Ot5yUVbgwcOQrQHBSaJ": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "name": "NetFlix"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "name": "DisneyPlus"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "name": "TrueId"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "name": "GPT"
+      }
+    ],
+    "backgroundImage": {
+      "name": "e9798ea0-8521-4f6a-9e49-2e6b3c97a970.jfif",
+      "path": "background/1779308144760-e9798ea0-8521-4f6a-9e49-2e6b3c97a970.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779308144760-e9798ea0-8521-4f6a-9e49-2e6b3c97a970.jfif?alt=media&token=ab77a0d9-8e1d-4067-a276-ae7fcea7a96a"
+    },
+    "backgroundImageButton": {
+      "name": "e55bd084-4a48-4119-89b5-d134ea7e0415.jfif",
+      "path": "button/1779308436892-e55bd084-4a48-4119-89b5-d134ea7e0415.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779308436892-e55bd084-4a48-4119-89b5-d134ea7e0415.jfif?alt=media&token=466eef96-0776-4ff5-ab63-4b87180d7ffb"
+    },
+    "cardBackground": {
+      "name": "IMG_7254.png",
+      "path": "appCard/1779309492509-IMG_7254.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779309492509-IMG_7254.png?alt=media&token=5591fc33-a7bb-49bb-b2a6-03025d17972b"
+    },
+    "cardShadowColor": "#86c1d6",
+    "color": "#4766d6",
+    "colorBorderInputEmail": "#4766d6",
+    "colorTextDiscriptionCard": "#5868a1",
+    "colorTextInputEmail": "#4766d6",
+    "colorTextTitleCard": "#3d4976",
+    "createdAt": 1779307247256,
+    "expiredDate": "2027-05-21",
+    "id": "-Ot5yUVbgwcOQrQHBSaJ",
+    "isOn": true,
+    "logo": {
+      "name": "aaf8aa75-aba1-49f1-b295-92a4700ee005-removebg-preview.png",
+      "path": "logo/1779307303772-aaf8aa75-aba1-49f1-b295-92a4700ee005-removebg-preview.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779307303772-aaf8aa75-aba1-49f1-b295-92a4700ee005-removebg-preview.png?alt=media&token=2408e751-1679-4f53-b26e-ac2f000ee63d"
+    },
+    "opacityCard": 0.7,
+    "shopName": "QUEENPM.",
+    "updatedAt": 1779369271695,
+    "url": "queenpm.tomoru.fun"
+  },
+  "-Ot8aNxeKkZoYHDXjROy": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "path": "app/1779352063009-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779352063009-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png?alt=media&token=c6d5832e-0288-46e9-9b4a-5a0c8cc9ce80"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "path": "app/1779352072034-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779352072034-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png?alt=media&token=75b4b147-8593-4666-8bcb-a5b7a668fbe5"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "path": "app/1779352085745-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779352085745-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png?alt=media&token=2d6586cc-b66a-40a9-8042-b634fcea813a"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "path": "app/1779352098867-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779352098867-98301a11-4a57-48e9-895e-6b93266bf357-removebg-preview.png?alt=media&token=dcb18a61-d8e0-4d7f-bf4f-2e65a45dd394"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "713a0140-c3cf-4d84-a25a-35f63e7e49e1.jfif",
+      "path": "background/1779351700528-713a0140-c3cf-4d84-a25a-35f63e7e49e1.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779351700528-713a0140-c3cf-4d84-a25a-35f63e7e49e1.jfif?alt=media&token=957d5ee3-cfbc-4f90-8f48-99028619470a"
+    },
+    "backgroundImageButton": {
+      "name": "2753f545-d78a-4240-80ab-9eb340eb7b80.jfif",
+      "path": "button/1779352234526-2753f545-d78a-4240-80ab-9eb340eb7b80.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779352234526-2753f545-d78a-4240-80ab-9eb340eb7b80.jfif?alt=media&token=ab6c006f-2826-4503-88a5-1c33524718a2"
+    },
+    "cardBackground": {
+      "name": "528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "path": "appCard/1779352106020-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779352106020-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif?alt=media&token=ebfe424f-68bf-4355-8b16-0945d22fb04b"
+    },
+    "color": "#854ab3",
+    "colorBorderInputEmail": "#854ab3",
+    "colorShadowButton": "#854ab3",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#854ab3",
+    "colorTextInputEmail": "#854ab3",
+    "colorTextTitleCard": "#854ab3",
+    "createdAt": 1779351261939,
+    "expiredDate": "2027-05-21",
+    "id": "-Ot8aNxeKkZoYHDXjROy",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "92cd1827-a5fb-4a9c-afe1-962344aeca8b-removebg-preview.png",
+      "path": "logo/1779351556384-92cd1827-a5fb-4a9c-afe1-962344aeca8b-removebg-preview.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779351556384-92cd1827-a5fb-4a9c-afe1-962344aeca8b-removebg-preview.png?alt=media&token=66ade8ea-fa3e-4e28-9d2a-cd25d64d651a"
+    },
+    "shopName": "mimeenstore",
+    "updatedAt": 1779369205120,
+    "url": "mimeenstore.tomoru.fun"
+  },
+  "-Ot8fd7bXgt18UcTwjGz": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "name": "NetFlix"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "name": "DisneyPlus"
+      }
+    ],
+    "backgroundImage": {
+      "name": "623D6D1D-6872-423B-836A-C62191057B1B.png",
+      "path": "background/1779357311454-623D6D1D-6872-423B-836A-C62191057B1B.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779357311454-623D6D1D-6872-423B-836A-C62191057B1B.png?alt=media&token=f5f28c97-ed9d-49d3-ade5-61f53c1ab0d6"
+    },
+    "backgroundImageButton": {
+      "name": "9708c175-6f1e-4204-9749-dfa3e109bdbd.jfif",
+      "path": "button/1779357904012-9708c175-6f1e-4204-9749-dfa3e109bdbd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779357904012-9708c175-6f1e-4204-9749-dfa3e109bdbd.jfif?alt=media&token=a5a9bef9-df3a-4345-910d-069b54a433be"
+    },
+    "cardBackground": {
+      "name": "528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "path": "appCard/1779358092979-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779358092979-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif?alt=media&token=6967dfed-7cd0-4460-8207-85a0c27b3c45"
+    },
+    "color": "#c6832d",
+    "colorBorderInputEmail": "#c6832d",
+    "colorTextDiscriptionCard": "#c6832d",
+    "colorTextInputEmail": "#c6832d",
+    "colorTextTitleCard": "#c6832d",
+    "createdAt": 1779352638901,
+    "expiredDate": "2027-05-21",
+    "id": "-Ot8fd7bXgt18UcTwjGz",
+    "isOn": true,
+    "isShowIcon": true,
+    "logo": {
+      "name": "ไม่มีชื่อ 28_20260521165147.png",
+      "path": "logo/1779357111351-ไม่มีชื่อ 28_20260521165147.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779357111351-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2028_20260521165147.png?alt=media&token=991ea9d9-9bcb-4a7f-a149-7f280e006620"
+    },
+    "opacityCard": 1,
+    "shopName": "Khunluna",
+    "updatedAt": 1779721928146,
+    "url": "khunluna.tomoru.fun"
+  },
+  "-Ot8y9OTYYnGHz7hUFsv": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "path": "app/1779378630537-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779378630537-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png?alt=media&token=f9805b05-630d-4bf6-92f8-67414f480c95"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "path": "app/1779378104620-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779378104620-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png?alt=media&token=9f6533cf-56b8-4027-b800-3ad9284caa9a"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "path": "app/1779378129584-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779378129584-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png?alt=media&token=ff63f7c3-47f0-43fc-bf72-26ee0b984d03"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "path": "app/1779378140961-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779378140961-14c344b9-2320-4ca5-983a-eb771f7d9b10-removebg-preview.png?alt=media&token=eae76591-fd21-48fd-bdea-a4cc60e9a99d"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "10e18213-b9fd-4232-9613-35aca7b44ee9.jfif",
+      "path": "background/1779377183833-10e18213-b9fd-4232-9613-35aca7b44ee9.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779377183833-10e18213-b9fd-4232-9613-35aca7b44ee9.jfif?alt=media&token=576c4f86-74b4-4863-9372-ff9d5b3d3e53"
+    },
+    "backgroundImageButton": {
+      "name": "8A69710F-053C-4278-B717-7E10123A7B13.png",
+      "path": "button/1779398819547-8A69710F-053C-4278-B717-7E10123A7B13.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779398819547-8A69710F-053C-4278-B717-7E10123A7B13.png?alt=media&token=3379dd82-66fd-453c-8037-b60917bc57f2"
+    },
+    "borderRadiusButton": 36,
+    "cardBackground": {
+      "name": "528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "path": "appCard/1779376713283-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779376713283-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif?alt=media&token=a0ba27fa-45c0-4c0d-b80f-eaeec6f8c814"
+    },
+    "color": "#ffffff",
+    "colorBorderInputEmail": "#ffffff",
+    "colorShadowButton": "#ff000000",
+    "colorTextButton": "#000000",
+    "colorTextDiscriptionCard": "#000000",
+    "colorTextInputEmail": "#ffffff",
+    "colorTextTitleCard": "#000000",
+    "createdAt": 1779357492825,
+    "expiredDate": "2027-05-21",
+    "horizontalButton": 80,
+    "id": "-Ot8y9OTYYnGHz7hUFsv",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "983f6a27-13b4-4b7a-90d2-2481191d0302-removebg-preview.png",
+      "path": "logo/1779379495428-983f6a27-13b4-4b7a-90d2-2481191d0302-removebg-preview.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779379495428-983f6a27-13b4-4b7a-90d2-2481191d0302-removebg-preview.png?alt=media&token=2c09c174-4590-4b79-bfab-bdef050d600d"
+    },
+    "shopName": "Firsttimek shop",
+    "updatedAt": 1779398868909,
+    "url": "firsttimek.tomoru.fun",
+    "verticalButton": 72
+  },
+  "-Ot99SQ7anwvly213v1G": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "name": "NetFlix"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "name": "DisneyPlus"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "name": "TrueId"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "ccb5bf8c-5b8b-496b-9ac0-4ab0fe2a7bd6.jfif",
+          "path": "app/1779361089462-ccb5bf8c-5b8b-496b-9ac0-4ab0fe2a7bd6.jfif",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779361089462-ccb5bf8c-5b8b-496b-9ac0-4ab0fe2a7bd6.jfif?alt=media&token=cc4e47c9-ca2c-461f-b399-b6283541f391"
+        },
+        "name": "GPT",
+        "shadowColor": "#40404070"
+      }
+    ],
+    "backgroundImage": {
+      "name": "c3048176-eb0c-4d13-9515-26392fc4da44.jfif",
+      "path": "background/1779372072098-c3048176-eb0c-4d13-9515-26392fc4da44.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779372072098-c3048176-eb0c-4d13-9515-26392fc4da44.jfif?alt=media&token=b6a3eeae-9c27-4f83-af36-50da33235b34"
+    },
+    "backgroundImageButton": {
+      "name": "528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "path": "button/1779360917565-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779360917565-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif?alt=media&token=e3fc83b8-793c-4ba6-af27-5daa75b20525"
+    },
+    "cardBackground": {
+      "name": "528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "path": "appCard/1779360886239-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779360886239-528681d9-309f-4110-8648-e7dcf5fa41bd.jfif?alt=media&token=d672b684-e03f-4922-a5bd-0806e7a6e3f8"
+    },
+    "color": "#518dce",
+    "colorBorderInputEmail": "#518dce",
+    "colorTextButton": "#518dce",
+    "colorTextDiscriptionCard": "#518dce",
+    "colorTextInputEmail": "#518dce",
+    "colorTextTitleCard": "#518dce",
+    "createdAt": 1779360717346,
+    "expiredDate": "2027-05-21",
+    "id": "-Ot99SQ7anwvly213v1G",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "b9b2fbb4-f02b-4bc5-9b15-0c0ac22a6b7e-removebg-preview.png",
+      "path": "logo/1779360840501-b9b2fbb4-f02b-4bc5-9b15-0c0ac22a6b7e-removebg-preview.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779360840501-b9b2fbb4-f02b-4bc5-9b15-0c0ac22a6b7e-removebg-preview.png?alt=media&token=f58d511f-34b1-49f7-967f-594e0b6cf2a1"
+    },
+    "shopName": "HWANSTORE 65",
+    "updatedAt": 1779372815800,
+    "url": "hwanstotr65.tomoru.fun"
+  },
+  "-OtA2w6hYUKDmACz0-3z": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "path": "app/1779390157126-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779390157126-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png?alt=media&token=afbce659-f176-4c31-b14e-d90ed9835c15"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "path": "app/1779390142136-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779390142136-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png?alt=media&token=5d788b1c-c8d3-4268-b92e-c229240d24cc"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "path": "app/1779390175245-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779390175245-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png?alt=media&token=a1ae0db3-107c-443d-b7d8-f6ef961925ff"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "path": "app/1779390185285-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779390185285-2B9E7E11-41DC-4F1E-BAAB-F1630EABD3E7.png?alt=media&token=2135174b-79ef-4f9a-92ea-73e3ed100741"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "9831b4bb-00a7-41c4-ba98-07e2bc5a3083.jfif",
+      "path": "background/1779389044029-9831b4bb-00a7-41c4-ba98-07e2bc5a3083.jfif",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779389044029-9831b4bb-00a7-41c4-ba98-07e2bc5a3083.jfif?alt=media&token=4f8560f9-4baf-4310-b64e-81f5a4ba4964"
+    },
+    "backgroundImageButton": {
+      "name": "5EFA7EBD-F808-4E29-9534-AE8FB81731C8.png",
+      "path": "button/1779398362466-5EFA7EBD-F808-4E29-9534-AE8FB81731C8.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779398362466-5EFA7EBD-F808-4E29-9534-AE8FB81731C8.png?alt=media&token=54eb793c-a050-46ef-aa74-f172f66666c7"
+    },
+    "borderRadiusButton": 36,
+    "borderRadiusCard": 28,
+    "cardBackground": {
+      "name": "IMG_7327.jpeg",
+      "path": "appCard/1779399955157-IMG_7327.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779399955157-IMG_7327.jpeg?alt=media&token=530fda29-5f04-423d-a050-294da5a40f6d"
+    },
+    "cardShadowColor": "#d2688a",
+    "color": "#d2688a",
+    "colorBorderInputEmail": "#d2688a",
+    "colorShadowButton": "#ff000000",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#d2688a",
+    "colorTextInputEmail": "#d2688a",
+    "colorTextTitleCard": "#d2688a",
+    "createdAt": 1779375784856,
+    "expiredDate": "2027-05-21",
+    "horizontalButton": 80,
+    "id": "-OtA2w6hYUKDmACz0-3z",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "IMG_3627.PNG",
+      "path": "logo/1779388878600-IMG_3627.PNG",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779388878600-IMG_3627.PNG?alt=media&token=ad1491ec-45c1-47cc-ad07-4ef5d53be5b1"
+    },
+    "opacityCard": 1,
+    "shopName": "piexapp",
+    "updatedAt": 1779399956257,
+    "url": "piexapp.tomoru.fun",
+    "verticalButton": 72
+  },
+  "-OtBUSaxl7F4hukz61af": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "path": "app/1779400967067-77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779400967067-77875CBA-EA8E-470F-8461-880A7165DF46.png?alt=media&token=be32abee-38a6-4dd6-aa1a-5ec017ebc3d2"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "path": "app/1779401142945-77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779401142945-77875CBA-EA8E-470F-8461-880A7165DF46.png?alt=media&token=2e009a63-7eb2-418b-a767-7f5948141b5b"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff550000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "path": "app/1779401012972-77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779401012972-77875CBA-EA8E-470F-8461-880A7165DF46.png?alt=media&token=7319b736-b503-4865-9d42-1f82117eca3f"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "path": "app/1779401056577-77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779401056577-77875CBA-EA8E-470F-8461-880A7165DF46.png?alt=media&token=fb08ca40-a3e3-4172-a33e-bf6a3df9575f"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "path": "app/1779401077934-77875CBA-EA8E-470F-8461-880A7165DF46.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779401077934-77875CBA-EA8E-470F-8461-880A7165DF46.png?alt=media&token=eb2df61d-4c93-4212-8663-a5e0d02dc59d"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "2767DE07-87DB-4DF9-BDA0-42829CCDC571.png",
+      "path": "background/1779401235895-2767DE07-87DB-4DF9-BDA0-42829CCDC571.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779401235895-2767DE07-87DB-4DF9-BDA0-42829CCDC571.png?alt=media&token=67fc90c6-bf33-4c71-8412-4d5ef9c0c01b"
+    },
+    "backgroundImageButton": {
+      "name": "IMG_7024.png",
+      "path": "button/1779402498939-IMG_7024.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779402498939-IMG_7024.png?alt=media&token=1385f0a7-4c16-47e4-8bee-7248f74552e3"
+    },
+    "borderRadiusButton": 36,
+    "cardBackground": {
+      "name": "ไม่มีชื่อ 28_20260521165123.png",
+      "path": "appCard/1779401383788-ไม่มีชื่อ 28_20260521165123.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779401383788-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2028_20260521165123.png?alt=media&token=af3ccebd-493f-4fcd-9195-78b67e49ef00"
+    },
+    "color": "#d96c9d",
+    "colorBorderInputEmail": "#d96c9d",
+    "colorShadowButton": "#ff000000",
+    "colorTextButton": "#d96c9d",
+    "colorTextDiscriptionCard": "#d96c9d",
+    "colorTextInputEmail": "#d96c9d",
+    "colorTextTitleCard": "#d96c9d",
+    "createdAt": 1779399776719,
+    "expiredDate": "2027-05-22",
+    "horizontalButton": 80,
+    "id": "-OtBUSaxl7F4hukz61af",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "5945fadfb8d42f81c12fd0b00053ec8b.jpeg",
+      "path": "logo/1779399792024-5945fadfb8d42f81c12fd0b00053ec8b.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779399792024-5945fadfb8d42f81c12fd0b00053ec8b.jpeg?alt=media&token=747cc012-2a21-4fb4-97d1-415658c5ef2d"
+    },
+    "shopName": "Rinnie Store",
+    "updatedAt": 1779402599064,
+    "url": "rinnieotp.tomoru.fun",
+    "verticalButton": 72
+  },
+  "-OtDjsDhiKIcaG0aQuoE": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779437927099-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779437927099-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=9d0a63f9-87a4-4ccc-9f0b-2773ab07b7f9"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779437938851-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779437938851-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=7024e5b4-04cb-4fdc-b022-ab92eb12a085"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779437949634-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779437949634-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=f4cb7932-dd66-46e1-a433-868fbf0d61c7"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779437958822-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779437958822-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=a020eb9f-ff54-4f6b-9cee-522fea0d56ce"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779437970432-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779437970432-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=d10dc12f-205d-46a8-8b09-6015fd1c9e66"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "att.JGRimVk_GUBz6f0gCHxVJSDLuZQl_SdxzVKzBUfYxzs.jpeg",
+      "path": "background/1779448579651-att.JGRimVk_GUBz6f0gCHxVJSDLuZQl_SdxzVKzBUfYxzs.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779448579651-att.JGRimVk_GUBz6f0gCHxVJSDLuZQl_SdxzVKzBUfYxzs.jpeg?alt=media&token=1e78a2f2-ae67-4191-b489-3a7802802513"
+    },
+    "backgroundImageButton": {
+      "name": "IMG_7430.jpeg",
+      "path": "button/1779531865716-IMG_7430.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779531865716-IMG_7430.jpeg?alt=media&token=4159969a-58b7-44de-8d4b-fea50d07f550"
+    },
+    "colorBackgroundInputEmail": "#ffffff",
+    "colorBorderInputEmail": "#1b1d91",
+    "colorShadowButton": "#4c0024",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#000000",
+    "colorTextInputEmail": "#3b3b3b",
+    "colorTextTitleCard": "#000000",
+    "createdAt": 1779437634427,
+    "expiredDate": "2027-05-22",
+    "horizontalButton": 70,
+    "id": "-OtDjsDhiKIcaG0aQuoE",
+    "isOn": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "IMG_7116.png",
+      "path": "logo/1779448548596-IMG_7116.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779448548596-IMG_7116.png?alt=media&token=3bd61427-cb1e-4ef0-99dd-e3e7552fd4a4"
+    },
+    "shopName": "PP MiniWorld",
+    "updatedAt": 1779531878439,
+    "url": "ppapp.tomoru.fun"
+  },
+  "-OtEQ-w8qmobTHtT-Du6": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779449246036-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779449246036-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=8f6903d6-5b49-4360-8319-3b1108f310fc"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779449267231-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779449267231-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=57fb6d9e-80a0-46b1-9629-1b198e241aee"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779449300687-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779449300687-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=e0182432-d1ae-420f-b7c0-0d1468953cd9"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779449328052-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779449328052-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=cc696d47-077f-494c-bf4e-af1ed63d7d34"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "path": "app/1779449359552-65D05808-6994-40A4-B7D8-D920533B6104.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779449359552-65D05808-6994-40A4-B7D8-D920533B6104.png?alt=media&token=0d9f32c4-55e8-4489-8a72-8b32d2d1d09d"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "IMG_7232.png",
+      "path": "background/1779539093576-IMG_7232.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779539093576-IMG_7232.png?alt=media&token=5b4bb8ed-371d-4e14-9236-0e5b8f92e7ff"
+    },
+    "backgroundImageButton": {
+      "name": "ไม่มีชื่อ 28_20260523192549.jpeg",
+      "path": "button/1779539162865-ไม่มีชื่อ 28_20260523192549.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779539162865-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2028_20260523192549.jpeg?alt=media&token=25cc3b77-2655-4abf-a321-cc43db5d2b1c"
+    },
+    "cardBackground": {
+      "name": "IMG_7096.png",
+      "path": "appCard/1779539181830-IMG_7096.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779539181830-IMG_7096.png?alt=media&token=804bff66-a76c-40ea-bac5-949040434699"
+    },
+    "cardShadowColor": "#cecece",
+    "color": "#e362b2",
+    "colorBorderInputEmail": "#e362b2",
+    "colorShadowButton": "#f1f1f1",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#e362b2",
+    "colorTextInputEmail": "#e362b2",
+    "colorTextTitleCard": "#e362b2",
+    "createdAt": 1779448942308,
+    "expiredDate": "2027-05-22",
+    "id": "-OtEQ-w8qmobTHtT-Du6",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "IMG_7231.png",
+      "path": "logo/1779539058701-IMG_7231.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779539058701-IMG_7231.png?alt=media&token=89410414-6e05-406f-8d92-1f686c179bee"
+    },
+    "shopName": "yourlover ",
+    "updatedAt": 1779539206149,
+    "url": "myggyourlover.tomoru.fun"
+  },
+  "-OtEQn9nD7AVQ2yQS-xN": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "path": "app/1779450739957-BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779450739957-BB1F1BEE-EA66-40F5-9F60-105581669406.png?alt=media&token=a6cf86a3-2c50-4b13-9293-1714a95ee4bd"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "path": "app/1779450796951-BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779450796951-BB1F1BEE-EA66-40F5-9F60-105581669406.png?alt=media&token=0514f5fd-053a-4f26-b3d0-71483909ccad"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "path": "app/1779450832580-BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779450832580-BB1F1BEE-EA66-40F5-9F60-105581669406.png?alt=media&token=b593d154-63ff-4971-b2fa-add14d90551d"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "path": "app/1779450849403-BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779450849403-BB1F1BEE-EA66-40F5-9F60-105581669406.png?alt=media&token=bf94e872-e1bc-4f0c-8d33-72333731734a"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "path": "app/1779450879387-BB1F1BEE-EA66-40F5-9F60-105581669406.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779450879387-BB1F1BEE-EA66-40F5-9F60-105581669406.png?alt=media&token=ed08f6be-28ee-44a6-b29d-76591d352b33"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "B2046155-725C-4D9E-97EA-3E75D8918F0C.png",
+      "path": "background/1779450053527-B2046155-725C-4D9E-97EA-3E75D8918F0C.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779450053527-B2046155-725C-4D9E-97EA-3E75D8918F0C.png?alt=media&token=4b4d575a-ddf0-415d-9137-97dd20855da5"
+    },
+    "backgroundImageButton": {
+      "name": "ไม่มีชื่อ 24_20260522185603.jpeg",
+      "path": "button/1779450969910-ไม่มีชื่อ 24_20260522185603.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779450969910-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2024_20260522185603.jpeg?alt=media&token=b917770e-4043-4482-8d90-40ee2609046c"
+    },
+    "cardBackground": {
+      "name": "IMG_7104.png",
+      "path": "appCard/1779450998080-IMG_7104.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779450998080-IMG_7104.png?alt=media&token=79583474-784e-406a-995e-1ec2674ad4d8"
+    },
+    "color": "#4a67e8",
+    "colorBorderInputEmail": "#4a67e8",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#4a67e8",
+    "colorTextInputEmail": "#4a67e8",
+    "colorTextTitleCard": "#4a67e8",
+    "createdAt": 1779449148045,
+    "expiredDate": "2027-05-22",
+    "id": "-OtEQn9nD7AVQ2yQS-xN",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "ไม่มีชื่อ 24_20260522184308.png",
+      "path": "logo/1779450204867-ไม่มีชื่อ 24_20260522184308.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779450204867-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2024_20260522184308.png?alt=media&token=1c1cf298-04ab-4456-941d-c1333f46c477"
+    },
+    "shopName": "SHARK STORE",
+    "updatedAt": 1779471788134,
+    "url": "sharkstore.tomoru.fun"
+  },
+  "-OtGTyQ73fma5ydq0jkv": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 37_20260523043952.png",
+          "path": "app/1779486039888-ไม่มีชื่อ 37_20260523043952.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779486039888-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260523043952.png?alt=media&token=c4ba9a8b-1755-443b-8ced-bcfbc3f36618"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 37_20260523043952.png",
+          "path": "app/1779486072179-ไม่มีชื่อ 37_20260523043952.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779486072179-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260523043952.png?alt=media&token=e9877157-8d99-46fa-b76f-8cbdf9b8bdd4"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 37_20260523043952.png",
+          "path": "app/1779486093857-ไม่มีชื่อ 37_20260523043952.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779486093857-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260523043952.png?alt=media&token=6b57555a-3154-4bbe-ad3a-c621e9db0f71"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 37_20260523043952.png",
+          "path": "app/1779486113145-ไม่มีชื่อ 37_20260523043952.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779486113145-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260523043952.png?alt=media&token=696f77ca-27ef-4aad-a8c1-adb79d1c568b"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 37_20260523043952.png",
+          "path": "app/1779486138251-ไม่มีชื่อ 37_20260523043952.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779486138251-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260523043952.png?alt=media&token=7fffa4b0-fc85-4761-866a-da6d13541c1f"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "C139171B-E937-463E-BB7A-6215B53DC2C1.png",
+      "path": "background/1779484006485-C139171B-E937-463E-BB7A-6215B53DC2C1.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779484006485-C139171B-E937-463E-BB7A-6215B53DC2C1.png?alt=media&token=49483c47-75c7-4d35-92eb-4a0c589b94f0"
+    },
+    "backgroundImageButton": {
+      "name": "ไม่มีชื่อ 37_20260523044340.jpeg",
+      "path": "button/1779486226064-ไม่มีชื่อ 37_20260523044340.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779486226064-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260523044340.jpeg?alt=media&token=72d10039-7134-42a7-937c-9dc7fd523bd0"
+    },
+    "cardBackground": {
+      "name": "IMG_7096.png",
+      "path": "appCard/1779486255358-IMG_7096.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779486255358-IMG_7096.png?alt=media&token=c4f3b0fe-e63b-440f-abd0-180f2ce291eb"
+    },
+    "color": "#e0972a",
+    "colorBorderInputEmail": "#e0972a",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#e0972a",
+    "colorTextInputEmail": "#e0972a",
+    "colorTextTitleCard": "#e0972a",
+    "createdAt": 1779483535038,
+    "expiredDate": "2027-05-23",
+    "id": "-OtGTyQ73fma5ydq0jkv",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "ไม่มีชื่อ 39_20260523040234.png",
+      "path": "logo/1779484270125-ไม่มีชื่อ 39_20260523040234.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779484270125-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2039_20260523040234.png?alt=media&token=89c27f7e-957a-4e4a-84ee-f3e5488ee487"
+    },
+    "shopName": "phatstore",
+    "updatedAt": 1779486256960,
+    "url": "phatstore.tomoru.fun"
+  },
+  "-OtNveLPbvzdrPJ3Zkyw": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "path": "app/1779676656674-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779676656674-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png?alt=media&token=6bd6f2bb-c847-4ee2-9617-1d28f736f974"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "path": "app/1779676666580-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779676666580-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png?alt=media&token=4caf196e-703f-442e-90f9-b55f3ebce46b"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "path": "app/1779676675686-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779676675686-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png?alt=media&token=8d1fab09-9610-4175-bb13-e6bf3355748d"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "path": "app/1779676684224-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779676684224-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png?alt=media&token=53c03ef2-c265-4251-9835-5ec4b0ceac1e"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "path": "app/1779676692206-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779676692206-8B9C7B71-6F06-492F-8B93-93A1A2177E3A.png?alt=media&token=c63c07bc-879d-4ed2-b211-d2be889e0ee1"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "0A84766F-FED0-4ABF-A373-A79F3BB9D063.png",
+      "path": "background/1779610091423-0A84766F-FED0-4ABF-A373-A79F3BB9D063.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779610091423-0A84766F-FED0-4ABF-A373-A79F3BB9D063.png?alt=media&token=91c86141-d523-403a-86fc-56931908e881"
+    },
+    "backgroundImageButton": {
+      "name": "ไม่มีชื่อ 37_20260524144835.jpeg",
+      "path": "button/1779608924316-ไม่มีชื่อ 37_20260524144835.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779608924316-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260524144835.jpeg?alt=media&token=2786dec0-c877-4110-a40b-cade8f30039f"
+    },
+    "cardBackground": {
+      "name": "IMG_7259.png",
+      "path": "appCard/1779608717355-IMG_7259.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779608717355-IMG_7259.png?alt=media&token=7312ec64-f8bc-4d95-86c7-2cd7bd481aed"
+    },
+    "color": "#5a2e1f",
+    "colorBorderInputEmail": "#5a2e1f",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#5a2e1f",
+    "colorTextInputEmail": "#5a2e1f",
+    "colorTextTitleCard": "#5a2e1f",
+    "createdAt": 1779608495543,
+    "expiredDate": "2027-05-24",
+    "id": "-OtNveLPbvzdrPJ3Zkyw",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "IMG_7300.jpeg",
+      "path": "logo/1779608509161-IMG_7300.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779608509161-IMG_7300.jpeg?alt=media&token=95024cb5-9839-4c43-acc6-ed356a59eb02"
+    },
+    "shopName": "sayhixstore",
+    "updatedAt": 1779676741370,
+    "url": "sayhixstore.tomoru.fun"
+  },
+  "-OtPMWRV7btT9gs_r9fd": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "name": "NetFlix"
+      }
+    ],
+    "cardBackground": {
+      "name": "IMG_7259.png",
+      "path": "appCard/1779632793706-IMG_7259.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779632793706-IMG_7259.png?alt=media&token=cffe1009-e67f-44ca-8804-e5eab83f5c84"
+    },
+    "colorTextDiscriptionCard": "#000000",
+    "colorTextTitleCard": "#000000",
+    "createdAt": 1779632576516,
+    "expiredDate": "2027-05-24",
+    "id": "-OtPMWRV7btT9gs_r9fd",
+    "isOn": true,
+    "logo": {
+      "name": "4E2D41D7-BB52-46F2-A4AD-615AB8061D71.png",
+      "path": "logo/1779632771434-4E2D41D7-BB52-46F2-A4AD-615AB8061D71.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779632771434-4E2D41D7-BB52-46F2-A4AD-615AB8061D71.png?alt=media&token=dca5c5df-a41f-4f0a-a69a-6c3c3d63b311"
+    },
+    "shopName": "App",
+    "updatedAt": 1779632818688,
+    "url": "appotp.tomoru.fun"
+  },
+  "-OtS2eGhH1x78JGARDue": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "path": "app/1779695663915-A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779695663915-A22C9750-2AD2-423E-A948-F7B58004DF91.png?alt=media&token=625f941a-d355-48e9-9518-63cc086d9387"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "path": "app/1779695676553-A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779695676553-A22C9750-2AD2-423E-A948-F7B58004DF91.png?alt=media&token=101c4b74-42d4-43fc-87a1-a74ca9765126"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#00000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "path": "app/1779695687066-A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779695687066-A22C9750-2AD2-423E-A948-F7B58004DF91.png?alt=media&token=c94aea1c-cfda-4259-bef8-25b3105c7a4e"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "path": "app/1779695711744-A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779695711744-A22C9750-2AD2-423E-A948-F7B58004DF91.png?alt=media&token=a1827bc9-3367-436a-afc2-fe9230ae3088"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "path": "app/1779695725899-A22C9750-2AD2-423E-A948-F7B58004DF91.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779695725899-A22C9750-2AD2-423E-A948-F7B58004DF91.png?alt=media&token=1a9868f6-ea0b-4c9f-8340-66674e1ee51c"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "71E71DF2-D28D-4197-8EB4-0EE4833E399B.png",
+      "path": "background/1779678123917-71E71DF2-D28D-4197-8EB4-0EE4833E399B.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779678123917-71E71DF2-D28D-4197-8EB4-0EE4833E399B.png?alt=media&token=cb6af18c-74c5-4dac-bac2-d09930e2bcbb"
+    },
+    "backgroundImageButton": {
+      "name": "att.RhYs8OCU_XXDnyqNRsZHPUrdPkQQVADfI5BEerSDUco.jpeg",
+      "path": "button/1779677950998-att.RhYs8OCU_XXDnyqNRsZHPUrdPkQQVADfI5BEerSDUco.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779677950998-att.RhYs8OCU_XXDnyqNRsZHPUrdPkQQVADfI5BEerSDUco.jpeg?alt=media&token=3afe6607-0119-407e-9807-0adb79fded82"
+    },
+    "cardBackground": {
+      "name": "att.RhYs8OCU_XXDnyqNRsZHPUrdPkQQVADfI5BEerSDUco.jpeg",
+      "path": "appCard/1779678253199-att.RhYs8OCU_XXDnyqNRsZHPUrdPkQQVADfI5BEerSDUco.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779678253199-att.RhYs8OCU_XXDnyqNRsZHPUrdPkQQVADfI5BEerSDUco.jpeg?alt=media&token=94b85a92-7a2a-445a-aecb-63ba6d33c76e"
+    },
+    "color": "#664848",
+    "colorBorderInputEmail": "#664848",
+    "colorTextButton": "#e3afcc",
+    "colorTextDiscriptionCard": "#e3afcc",
+    "colorTextInputEmail": "#664848",
+    "colorTextTitleCard": "#e3afcc",
+    "createdAt": 1779677701236,
+    "expiredDate": "2027-05-25",
+    "id": "-OtS2eGhH1x78JGARDue",
+    "isOn": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "att.S81zK49woTB4Jh84QnHamTXzTiepluBocHAcfXRgEqQ.jpeg",
+      "path": "logo/1779677767340-att.S81zK49woTB4Jh84QnHamTXzTiepluBocHAcfXRgEqQ.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779677767340-att.S81zK49woTB4Jh84QnHamTXzTiepluBocHAcfXRgEqQ.jpeg?alt=media&token=ea9f38a7-a69a-40f6-8c1c-66c64034910f"
+    },
+    "opacityCard": 1,
+    "shopName": "yami",
+    "updatedAt": 1779695731738,
+    "url": "yami.tomoru.fun"
+  },
+  "-OtTBzD8H106aYiR4LgK": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "path": "app/1779699618923-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779699618923-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png?alt=media&token=03a6584e-af43-46e8-8176-71031e7d037b"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "path": "app/1779706591699-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779706591699-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png?alt=media&token=049a214b-4c9d-4f35-92d2-7fef58d226a3"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "path": "app/1779706606501-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779706606501-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png?alt=media&token=484d60ed-33db-4fc9-8136-f3f81cfb7525"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "path": "app/1779817080863-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779817080863-1835CF2C-9517-4FD4-9CF8-F6AFEBE9D91B.png?alt=media&token=cd5df69e-14f9-47b0-a810-7d870b34f3e3"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "A759E3E9-95A4-4EF7-A175-EF0D71DE30B1.png",
+      "path": "background/1779707036064-A759E3E9-95A4-4EF7-A175-EF0D71DE30B1.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779707036064-A759E3E9-95A4-4EF7-A175-EF0D71DE30B1.png?alt=media&token=114b789f-b956-4ad1-ae44-b97d6ae6be32"
+    },
+    "backgroundImageButton": {
+      "name": "5A7E0E77-0FC0-471F-92B7-E1644D020B89.png",
+      "path": "button/1779707180308-5A7E0E77-0FC0-471F-92B7-E1644D020B89.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779707180308-5A7E0E77-0FC0-471F-92B7-E1644D020B89.png?alt=media&token=93fedd39-5f48-4157-94c3-159db5a75cd0"
+    },
+    "cardBackground": {
+      "name": "5A7E0E77-0FC0-471F-92B7-E1644D020B89.png",
+      "path": "appCard/1779707137252-5A7E0E77-0FC0-471F-92B7-E1644D020B89.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779707137252-5A7E0E77-0FC0-471F-92B7-E1644D020B89.png?alt=media&token=33334f5b-f319-410b-abcb-86bfecfe1471"
+    },
+    "color": "#d96c8a",
+    "colorBorderInputEmail": "#d96c8a",
+    "colorTextButton": "#d96c8a",
+    "colorTextDiscriptionCard": "#d96c8a",
+    "colorTextInputEmail": "#d96c8a",
+    "colorTextTitleCard": "#d96c8a",
+    "createdAt": 1779696923560,
+    "expiredDate": "2027-05-25",
+    "id": "-OtTBzD8H106aYiR4LgK",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "B65E6B6A-4A97-4B60-9EA8-8E77FA94FA25.png",
+      "path": "logo/1779697886594-B65E6B6A-4A97-4B60-9EA8-8E77FA94FA25.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779697886594-B65E6B6A-4A97-4B60-9EA8-8E77FA94FA25.png?alt=media&token=1c5dac2a-bddc-45d8-b5eb-e0905be8ded9"
+    },
+    "opacityCard": 1,
+    "shopName": "Thankyou",
+    "updatedAt": 1780245373776,
+    "url": "thankyou.tomoru.fun"
+  },
+  "-OtTpCJz2ZV5Wu4Jynyn": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "path": "app/1779711064809-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779711064809-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png?alt=media&token=29586b57-177e-4163-bf56-f8b0890566b0"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "path": "app/1779711093483-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779711093483-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png?alt=media&token=fec63846-6589-4925-95bd-874d35723096"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "path": "app/1779711147988-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779711147988-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png?alt=media&token=d6908f8c-cac7-4860-9c74-66759907337d"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "path": "app/1779711165965-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779711165965-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png?alt=media&token=059417b2-5eba-43b2-a907-a72b0f51d50d"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "path": "app/1779711192194-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779711192194-1AADB9FF-D7A0-4E42-88DF-255F6C5766A3.png?alt=media&token=9c692842-645a-4076-89aa-31b6f34dbe18"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png",
+      "path": "background/1779708774873-53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779708774873-53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png?alt=media&token=c3288231-49a4-48b6-80b8-df5529f43180"
+    },
+    "backgroundImageButton": {
+      "name": "53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png",
+      "path": "button/1779711297324-53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779711297324-53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png?alt=media&token=be32136f-eabd-46b3-ac58-0e4ed3d7fd82"
+    },
+    "cardBackground": {
+      "name": "53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png",
+      "path": "appCard/1779711321931-53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/appCard%2F1779711321931-53D99651-662D-4B9A-A8AD-8DDAA15A8DD3.png?alt=media&token=79a9f433-53c3-4d74-9c24-db7e357de54f"
+    },
+    "color": "#886be6",
+    "colorBorderInputEmail": "#886be6",
+    "colorTextButton": "#886be6",
+    "colorTextDiscriptionCard": "#886be6",
+    "colorTextInputEmail": "#886be6",
+    "colorTextTitleCard": "#886be6",
+    "createdAt": 1779707467385,
+    "expiredDate": "2027-05-25",
+    "id": "-OtTpCJz2ZV5Wu4Jynyn",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "IMG_7421.png",
+      "path": "logo/1779709545792-IMG_7421.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779709545792-IMG_7421.png?alt=media&token=fc4fe89a-d7d3-4243-ab13-8dbb8622d762"
+    },
+    "opacityCard": 1,
+    "shopName": "NB store",
+    "updatedAt": 1779711327304,
+    "url": "nbotp.tomoru.fun"
+  },
+  "-OtU3POAJQYfiFv6iahN": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "D0955FA3-C1C7-43E7-A868-5352183F8702.png",
+          "path": "app/1779713530973-D0955FA3-C1C7-43E7-A868-5352183F8702.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779713530973-D0955FA3-C1C7-43E7-A868-5352183F8702.png?alt=media&token=50eb7a02-8bc2-4e02-9a2b-ed77819ac030"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "logo": {
+          "name": "D0955FA3-C1C7-43E7-A868-5352183F8702.png",
+          "path": "app/1779713552284-D0955FA3-C1C7-43E7-A868-5352183F8702.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779713552284-D0955FA3-C1C7-43E7-A868-5352183F8702.png?alt=media&token=3cfa8306-7884-466d-ae3e-11be5d6ad918"
+        },
+        "name": "DisneyPlus",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 26_20260525195353.png",
+          "path": "app/1779713723476-ไม่มีชื่อ 26_20260525195353.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779713723476-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2026_20260525195353.png?alt=media&token=37760876-d2fd-4147-a206-89eedc3c4dcc"
+        },
+        "name": "TrueId",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 26_20260525201026.png",
+          "path": "app/1779714642941-ไม่มีชื่อ 26_20260525201026.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779714642941-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2026_20260525201026.png?alt=media&token=dc03c3d7-9b77-4fe9-a4a0-a9d8aa5625ff"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "logo": {
+          "name": "ไม่มีชื่อ 26_20260525200758.png",
+          "path": "app/1779714563218-ไม่มีชื่อ 26_20260525200758.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779714563218-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2026_20260525200758.png?alt=media&token=504bf7be-521f-48da-ac16-d100899fa2a3"
+        },
+        "name": "Prime",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "att.qoTte-zv0iCCp99sICOGEcoJkMD4lN0LcwYiCCtN1nY.jpeg",
+      "path": "background/1779711479546-att.qoTte-zv0iCCp99sICOGEcoJkMD4lN0LcwYiCCtN1nY.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779711479546-att.qoTte-zv0iCCp99sICOGEcoJkMD4lN0LcwYiCCtN1nY.jpeg?alt=media&token=42bc7d4d-1b58-4311-b836-9cd36fbd51ef"
+    },
+    "createdAt": 1779711453433,
+    "expiredDate": "2027-05-25",
+    "id": "-OtU3POAJQYfiFv6iahN",
+    "isOn": true,
+    "logo": {
+      "name": "IMG_7431.png",
+      "path": "logo/1779711624917-IMG_7431.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779711624917-IMG_7431.png?alt=media&token=7097ab44-c24e-450f-b2ce-ae28432d92ba"
+    },
+    "shopName": "Matalada",
+    "updatedAt": 1779714654395,
+    "url": "otpmatalada.tomoru.fun"
+  },
+  "-OtjeFyFlWAqr4XmgN9J": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "logo": {
+          "name": "96BA198A-AD8A-481E-AB32-959F3C68B6D2.png",
+          "path": "app/1779991682094-96BA198A-AD8A-481E-AB32-959F3C68B6D2.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779991682094-96BA198A-AD8A-481E-AB32-959F3C68B6D2.png?alt=media&token=72af6277-f71d-45bd-acbf-a6fb8456a6b2"
+        },
+        "name": "NetFlix",
+        "shadowColor": "#ff000000"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "logo": {
+          "name": "96BA198A-AD8A-481E-AB32-959F3C68B6D2.png",
+          "path": "app/1779991660615-96BA198A-AD8A-481E-AB32-959F3C68B6D2.png",
+          "status": "done",
+          "uid": "1",
+          "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/app%2F1779991660615-96BA198A-AD8A-481E-AB32-959F3C68B6D2.png?alt=media&token=dfbd82f9-96a1-4596-a68a-e513df6d65b2"
+        },
+        "name": "GPT",
+        "shadowColor": "#ff000000"
+      }
+    ],
+    "backgroundImage": {
+      "name": "7E35ED04-FA77-428E-8848-6A8D1FD5870A.png",
+      "path": "background/1779990079453-7E35ED04-FA77-428E-8848-6A8D1FD5870A.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1779990079453-7E35ED04-FA77-428E-8848-6A8D1FD5870A.png?alt=media&token=c270dd32-eb92-425a-a3b0-eddc9b9771fb"
+    },
+    "backgroundImageButton": {
+      "name": "ไม่มีชื่อ 37_20260529010526.jpeg",
+      "path": "button/1779991555388-ไม่มีชื่อ 37_20260529010526.jpeg",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/button%2F1779991555388-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%2037_20260529010526.jpeg?alt=media&token=4aec8ee3-98a8-4c05-a8cc-d25043debedd"
+    },
+    "color": "#8b4dcc",
+    "colorBorderInputEmail": "#8b4dcc",
+    "colorTextButton": "#ffffff",
+    "colorTextDiscriptionCard": "#8b4dcc",
+    "colorTextInputEmail": "#8b4dcc",
+    "colorTextTitleCard": "#8b4dcc",
+    "createdAt": 1779989811131,
+    "expiredDate": "2027-05-29",
+    "id": "-OtjeFyFlWAqr4XmgN9J",
+    "isOn": true,
+    "isShowIcon": true,
+    "isShowIconEmail": true,
+    "logo": {
+      "name": "IMG_8664.PNG",
+      "path": "logo/1779989841557-IMG_8664.PNG",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1779989841557-IMG_8664.PNG?alt=media&token=24e7b646-07de-4c00-b045-8ded3bd7c520"
+    },
+    "shopName": "bequeenstore",
+    "updatedAt": 1779991685760,
+    "url": "bequeen.tomoru.fun"
+  },
+  "-Otyv2WrF5MAiOwOJzfc": {
+    "appSetting": [
+      {
+        "appCode": "NF",
+        "isOn": true,
+        "name": "NetFlix"
+      },
+      {
+        "appCode": "DN",
+        "isOn": true,
+        "name": "DisneyPlus"
+      },
+      {
+        "appCode": "TM",
+        "isOn": true,
+        "name": "TrueId"
+      },
+      {
+        "appCode": "GPT",
+        "isOn": true,
+        "name": "GPT"
+      },
+      {
+        "appCode": "PR",
+        "isOn": true,
+        "name": "Prime"
+      }
+    ],
+    "backgroundImage": {
+      "name": "DD13C000-FE43-4C59-B73A-A749336D047D.png",
+      "path": "background/1780248589838-DD13C000-FE43-4C59-B73A-A749336D047D.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/background%2F1780248589838-DD13C000-FE43-4C59-B73A-A749336D047D.png?alt=media&token=b6aa455f-9091-4d06-8b55-0569099c2f6f"
+    },
+    "color": "#9d50e6",
+    "createdAt": 1780245870524,
+    "expiredDate": "2027-05-31",
+    "id": "-Otyv2WrF5MAiOwOJzfc",
+    "isOn": true,
+    "logo": {
+      "name": "ไม่มีชื่อ 6_20260601004212.png",
+      "path": "logo/1780249340650-ไม่มีชื่อ 6_20260601004212.png",
+      "status": "done",
+      "uid": "1",
+      "url": "https://firebasestorage.googleapis.com/v0/b/backend-email-e48b6.firebasestorage.app/o/logo%2F1780249340650-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%206_20260601004212.png?alt=media&token=b89eeacc-3b2a-4f42-9fd0-af04fbd43308"
+    },
+    "shopName": "chayastore",
+    "updatedAt": 1780249348985,
+    "url": "chayastore.tomoru.fun"
+  }
+}
