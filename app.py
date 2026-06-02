@@ -210,7 +210,7 @@ def get_otp():
 
     lower_email = email_input.lower()
     is_maily_domain = False
-    maily_domains = ["@lico.moe", "@rdcw.plus"] # โดเมนหลักของ Maily Space
+    maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"] # โดเมนหลักของ Maily Space
     
     for d in maily_domains:
         if d in lower_email:

@@ -148,7 +148,7 @@ function extract_otp_code($html_body) {
 
 $lower_email = strtolower($email);
 $is_maily_domain = false;
-$maily_domains = ["@lico.moe", "@rdcw.plus"];
+$maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"];
 
 foreach ($maily_domains as $d) {
     if (strpos($lower_email, $d) !== false) {
