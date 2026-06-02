@@ -386,41 +386,40 @@
                 return;
             }
 
-            // แสดงรายการจดหมายเข้าทั้งหมด
-            emails.forEach((emailData, idx) => {
-                const card = document.createElement('div');
-                card.className = "group border border-gray-100 hover:border-black/10 rounded-2xl p-4 bg-zinc-50/50 hover:bg-white transition-all duration-300 cursor-pointer flex items-start gap-3.5 shadow-sm hover:shadow active:scale-[0.99] select-none text-left";
-                card.onclick = () => openEmailDetail(idx);
-                
-                // จัดแต่งชื่อผู้ส่งให้สะอาดเป็นทางการ
-                let senderClean = emailData.from.split('<')[0].replace(/"/g, '').trim();
-                if (!senderClean) senderClean = appName + " Security";
-                
-                // ดึงเฉพาะพาร์ทเวลาออกมา
-                const timePart = emailData.time.split(' เวลา ')[1] || '';
-                const datePart = emailData.time.split(' เวลา ')[0] || '';
-                
-                card.innerHTML = `
-                    <div class="w-10 h-10 rounded-xl bg-white shadow-sm border border-zinc-100/60 flex items-center justify-center text-zinc-400 group-hover:text-black group-hover:bg-zinc-50 transition-all duration-300 flex-shrink-0">
-                        <i class="fa-solid fa-envelope text-sm"></i>
+            // แสดงเฉพาะรายการจดหมายเข้าล่าสุดฉบับเดียวเท่านั้น (ไม่แสดงประวัติเก่า)
+            const emailData = emails[0];
+            const card = document.createElement('div');
+            card.className = "group border border-gray-100 hover:border-black/10 rounded-2xl p-4 bg-zinc-50/50 hover:bg-white transition-all duration-300 cursor-pointer flex items-start gap-3.5 shadow-sm hover:shadow active:scale-[0.99] select-none text-left";
+            card.onclick = () => openEmailDetail(0);
+            
+            // จัดแต่งชื่อผู้ส่งให้สะอาดเป็นทางการ
+            let senderClean = emailData.from.split('<')[0].replace(/"/g, '').trim();
+            if (!senderClean) senderClean = appName + " Security";
+            
+            // ดึงเฉพาะพาร์ทเวลาออกมา
+            const timePart = emailData.time.split(' เวลา ')[1] || '';
+            const datePart = emailData.time.split(' เวลา ')[0] || '';
+            
+            card.innerHTML = `
+                <div class="w-10 h-10 rounded-xl bg-white shadow-sm border border-zinc-100/60 flex items-center justify-center text-zinc-400 group-hover:text-black group-hover:bg-zinc-50 transition-all duration-300 flex-shrink-0">
+                    <i class="fa-solid fa-envelope text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0 space-y-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-zinc-800 truncate">${senderClean}</span>
+                        <span class="text-[9px] font-semibold text-zinc-400 whitespace-nowrap">${timePart ? 'เวลา ' + timePart.replace(' (ตามเวลาประเทศไทย)', '') : ''}</span>
                     </div>
-                    <div class="flex-1 min-w-0 space-y-1">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-xs font-bold text-zinc-800 truncate">${senderClean}</span>
-                            <span class="text-[9px] font-semibold text-zinc-400 whitespace-nowrap">${timePart ? 'เวลา ' + timePart.replace(' (ตามเวลาประเทศไทย)', '') : ''}</span>
-                        </div>
-                        <p class="text-[11px] font-bold text-zinc-900 leading-snug truncate">${emailData.subject}</p>
-                        <div class="flex items-center justify-between pt-1">
-                            <span class="text-[9px] text-zinc-400">${datePart}</span>
-                            <span class="inline-flex items-center gap-1 text-[9px] font-extrabold text-black group-hover:translate-x-1 transition-transform duration-300">
-                                <span>เปิดดู OTP</span>
-                                <i class="fa-solid fa-arrow-right-long text-[8px]"></i>
-                            </span>
-                        </div>
+                    <p class="text-[11px] font-bold text-zinc-900 leading-snug truncate">${emailData.subject}</p>
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-[9px] text-zinc-400">${datePart}</span>
+                        <span class="inline-flex items-center gap-1 text-[9px] font-extrabold text-black group-hover:translate-x-1 transition-transform duration-300">
+                            <span>เปิดดู OTP</span>
+                            <i class="fa-solid fa-arrow-right-long text-[8px]"></i>
+                        </span>
                     </div>
-                `;
-                emailListContainer.appendChild(card);
-            });
+                </div>
+            `;
+            emailListContainer.appendChild(card);
         }
 
         // เริ่มต้นการดึงจดหมายสดทุก 5 วินาที (Auto Polling)
