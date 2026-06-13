@@ -230,7 +230,7 @@
             </div>
 
             <!-- 2. Detailed Email View (หน้าจอแรนเดอร์จดหมายจริงฉบับเต็ม) -->
-            <div id="emailDetailView" class="hidden p-4 md:p-6 space-y-4">
+            <div id="emailDetailView" class="hidden p-4 md:p-6 space-y-5">
                 <div class="flex items-center justify-between border-b border-gray-50 pb-2">
                     <button onclick="showInboxList()" class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-black font-semibold transition-all">
                         <i class="fa-solid fa-chevron-left text-[9px]"></i>
@@ -239,13 +239,31 @@
                     <span id="detailEmailTime" class="text-[10px] text-gray-400 font-medium"></span>
                 </div>
 
-                <div class="flex items-center gap-2 text-xs font-bold text-gray-800">
-                    <i class="fa-solid fa-envelope-open-text text-sm text-gray-400"></i>
-                    <span>📨 หน้าจอจดหมายฉบับจริงจากกล่องข้อความ (Email Preview)</span>
+                <!-- OTP Display Card (แสดงรหัส OTP แบบพรีเมียมขนาดใหญ่) -->
+                <div id="otpDisplayCard" class="bg-zinc-50 border border-zinc-100 rounded-3xl p-6 text-center space-y-3 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-200"></div>
+                    <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">รหัสยืนยันตัวตน (OTP)</p>
+                    <div class="flex flex-col items-center justify-center gap-1">
+                        <span id="otpCodeNumber" class="text-4xl font-extrabold text-black tracking-widest select-all">-</span>
+                        <p id="otpRefText" class="text-[10px] text-zinc-400 font-light mt-1"></p>
+                    </div>
+                    <div class="pt-2 flex justify-center">
+                        <button onclick="copyOTP()" class="bg-black hover:bg-zinc-800 text-white text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-1.5 transition-all active:scale-[0.97] shadow-sm">
+                            <i class="fa-solid fa-copy text-[10px]"></i>
+                            <span>คัดลอกรหัส OTP</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button onclick="toggleEmailIframe()" id="toggleIframeBtn" class="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 font-bold transition-all">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <span id="toggleIframeText">แสดงจดหมายฉบับจริง (Show Email Preview)</span>
+                    </button>
                 </div>
                 
-                <div class="border border-gray-100 rounded-2xl overflow-hidden shadow-inner bg-white">
-                    <iframe id="emailIframe" class="w-full h-[500px] border-0 bg-white" title="Email preview content"></iframe>
+                <div id="iframeContainer" class="hidden border border-gray-100 rounded-2xl overflow-hidden shadow-inner bg-white transition-all duration-300">
+                    <iframe id="emailIframe" class="w-full h-[450px] border-0 bg-white" title="Email preview content"></iframe>
                 </div>
                 
                 <div class="text-center text-[10px] text-gray-400 font-light truncate">
@@ -346,6 +364,11 @@
             const detailEmailTime = document.getElementById('detailEmailTime');
             const recipientEmail = document.getElementById('recipientEmail');
             
+            const otpCodeNumber = document.getElementById('otpCodeNumber');
+            const otpRefText = document.getElementById('otpRefText');
+            const iframeContainer = document.getElementById('iframeContainer');
+            const toggleIframeBtn = document.getElementById('toggleIframeBtn');
+            
             const emailData = currentEmails[index];
             if (!emailData) return;
             
@@ -355,6 +378,29 @@
             
             if (recipientEmail) {
                 recipientEmail.innerText = document.getElementById('email').value.trim();
+            }
+            
+            // เคลียร์การแสดงผลตัวเก่าของ IFrame
+            if (iframeContainer) iframeContainer.classList.add('hidden');
+            if (toggleIframeBtn) toggleIframeBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> <span id="toggleIframeText">แสดงจดหมายฉบับจริง (Show Email Preview)</span>';
+            
+            // แสดงรหัส OTP และรหัสอ้างอิง
+            if (otpCodeNumber) {
+                if (emailData.otp) {
+                    otpCodeNumber.innerText = emailData.otp;
+                } else {
+                    otpCodeNumber.innerText = 'ไม่พบรหัส OTP';
+                }
+            }
+            
+            if (otpRefText) {
+                if (emailData.ref) {
+                    otpRefText.innerText = `รหัสอ้างอิง (Ref): ${emailData.ref}`;
+                    otpRefText.classList.remove('hidden');
+                } else {
+                    otpRefText.innerText = '';
+                    otpRefText.classList.add('hidden');
+                }
             }
             
             if (emailIframe && emailData.html_body) {
@@ -368,6 +414,38 @@
             
             inboxListView.classList.add('hidden');
             emailDetailView.classList.remove('hidden');
+        }
+
+        // คัดลอกรหัส OTP
+        function copyOTP() {
+            const otpText = document.getElementById('otpCodeNumber').innerText;
+            if (otpText && otpText !== '-' && otpText !== 'ไม่พบรหัส OTP') {
+                navigator.clipboard.writeText(otpText).then(() => {
+                    const notify = document.createElement('div');
+                    notify.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs font-bold px-4 py-2 rounded-2xl shadow-lg z-50 animate-bounce";
+                    notify.innerText = "คัดลอกรหัส OTP สำเร็จแล้วค่ะ!";
+                    document.body.appendChild(notify);
+                    setTimeout(() => notify.remove(), 2000);
+                }).catch(err => {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+        }
+
+        // แสดง/ซ่อน จดหมายฉบับเต็ม
+        function toggleEmailIframe() {
+            const iframeContainer = document.getElementById('iframeContainer');
+            const toggleIframeBtn = document.getElementById('toggleIframeBtn');
+            
+            if (iframeContainer) {
+                if (iframeContainer.classList.contains('hidden')) {
+                    iframeContainer.classList.remove('hidden');
+                    toggleIframeBtn.innerHTML = '<i class="fa-solid fa-eye"></i> <span id="toggleIframeText">ซ่อนจดหมายฉบับจริง (Hide Email Preview)</span>';
+                } else {
+                    iframeContainer.classList.add('hidden');
+                    toggleIframeBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> <span id="toggleIframeText">แสดงจดหมายฉบับจริง (Show Email Preview)</span>';
+                }
+            }
         }
 
         // ฟังก์ชันอัปเดต UI รายการอีเมลแบบ Real-time

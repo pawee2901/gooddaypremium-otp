@@ -166,17 +166,34 @@ def extract_otp_code(html_body):
         
     plain_text = re.sub(r'<[^>]+>', ' ', html_body)
     
-    # 1. ค้นหาตัวเลข 6 หลักแบบ Contiguous (สอดคล้องกับ OpenAI / Netflix)
+    # 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด
+    pattern = r'(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัสคือ|รหัสยืนยันคือ|โค้ดคือ|โค้ด)\s*(?:คือ|:|\s)\s*(\d{4,8})'
+    match = re.search(pattern, plain_text, re.IGNORECASE)
+    if match:
+        return match.group(1)
+        
+    # 2. ค้นหาตัวเลข 6 หลักแบบ Contiguous (สอดคล้องกับ OpenAI / Netflix)
     otp_match = re.search(r'\b\d{6}\b', plain_text)
     if otp_match:
         return otp_match.group(0)
         
-    # 2. ค้นหาตัวเลข 4-8 หลัก (เผื่อแบรนด์อื่นๆ)
+    # 3. ค้นหาตัวเลข 4-8 หลัก (เผื่อแบรนด์อื่นๆ)
     otp_match = re.search(r'\b\d{4,8}\b', plain_text)
     if otp_match:
         return otp_match.group(0)
         
     return None
+
+# ฟังก์ชันดึงรหัสอ้างอิง (Reference Code) จาก HTML Body
+def extract_ref_code(html_body):
+    if not html_body:
+        return ""
+    plain_text = re.sub(r'<[^>]+>', ' ', html_body)
+    pattern = r'(?:รหัสอ้างอิง|อ้างอิง|Ref|Reference)\s*(?:คือ|:|\s)\s*([A-Za-z0-9]{4,10})'
+    match = re.search(pattern, plain_text, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    return ""
 
 # =========================================================================
 # Route 1: หน้าแรก แรนเดอร์หน้าเว็บ (Frontend SPA)
@@ -283,12 +300,14 @@ def get_otp():
                             pass
                             
                     otp_code = extract_otp_code(html_body) or ""
+                    ref_code = extract_ref_code(html_body) or ""
                     formatted_time = parse_utc_timestamp_to_thai(mail.get("createdAt", ""))
                     matching_mails.append({
                         'subject': mail.get("subject", "ไม่มีหัวข้อ"),
                         'from': mail.get("from", ""),
                         'time': formatted_time,
                         'otp': otp_code,
+                        'ref': ref_code,
                         'html_body': html_body
                     })
                     
@@ -358,6 +377,7 @@ def get_otp():
                         html_body = html_body[table_idx:]
                         
                 otp_code = extract_otp_code(html_body) or ""
+                ref_code = extract_ref_code(html_body) or ""
                 formatted_time = parse_cloud_run_date_to_thai(mail.get("date", ""))
                 
                 matching_mails.append({
@@ -365,6 +385,7 @@ def get_otp():
                     'from': mail.get("sender", f"{app_name} Security"),
                     'time': formatted_time,
                     'otp': otp_code,
+                    'ref': ref_code,
                     'html_body': html_body
                 })
                 

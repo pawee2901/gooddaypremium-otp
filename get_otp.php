@@ -133,17 +133,33 @@ function extract_otp_code($html_body) {
     if (empty($html_body)) return null;
     $plain_text = strip_tags($html_body);
     
-    // 1. ตรวจสอบรหัส 6 หลักติดกัน
+    // 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด
+    if (preg_match('/(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัสคือ|รหัสยืนยันคือ|โค้ดคือ|โค้ด)\s*(?:คือ|:|\s)\s*(\d{4,8})/ui', $plain_text, $matches)) {
+        return $matches[1];
+    }
+    
+    // 2. ตรวจสอบรหัส 6 หลักติดกัน (เป็นหลักทั่วไปของ OTP)
     if (preg_match('/\b\d{6}\b/', $plain_text, $matches)) {
         return $matches[0];
     }
     
-    // 2. ตรวจสอบรหัส 4-8 หลัก
+    // 3. ตรวจสอบรหัส 4-8 หลักอื่นๆ
     if (preg_match('/\b\d{4,8}\b/', $plain_text, $matches)) {
         return $matches[0];
     }
     
     return null;
+}
+
+// ฟังก์ชันดึงรหัสอ้างอิง (Reference Code) จาก HTML Body
+function extract_ref_code($html_body) {
+    if (empty($html_body)) return '';
+    $plain_text = strip_tags($html_body);
+    
+    if (preg_match('/(?:รหัสอ้างอิง|อ้างอิง|Ref|Reference)\s*(?:คือ|:|\s)\s*([A-Za-z0-9]{4,10})/ui', $plain_text, $matches)) {
+        return $matches[1];
+    }
+    return '';
 }
 
 $lower_email = strtolower($email);
@@ -239,6 +255,7 @@ if ($is_maily_domain) {
             }
             
             $otp_code = extract_otp_code($html_body) ?? '';
+            $ref_code = extract_ref_code($html_body) ?? '';
             $time_formatted = parse_utc_timestamp_to_thai($mail['createdAt'] ?? '');
             
             $matching_mails[] = [
@@ -246,6 +263,7 @@ if ($is_maily_domain) {
                 'from' => $mail['from'] ?? '',
                 'time' => $time_formatted,
                 'otp' => $otp_code,
+                'ref' => $ref_code,
                 'html_body' => $html_body
             ];
             
@@ -322,6 +340,7 @@ if ($is_maily_domain) {
         }
         
         $otp_code = extract_otp_code($html_body) ?? '';
+        $ref_code = extract_ref_code($html_body) ?? '';
         $time_formatted = parse_cloud_run_date_to_thai($mail['date'] ?? '');
         
         $matching_mails[] = [
@@ -329,6 +348,7 @@ if ($is_maily_domain) {
             'from' => $mail['sender'] ?? "$app_name Security",
             'time' => $time_formatted,
             'otp' => $otp_code,
+            'ref' => $ref_code,
             'html_body' => $html_body
         ];
     }
