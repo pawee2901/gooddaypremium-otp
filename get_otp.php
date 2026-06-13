@@ -209,6 +209,35 @@ if ($is_maily_domain) {
     foreach ($mails as $mail) {
         if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name)) {
             $html_body = $mail['html'] ?? '';
+            
+            // หากเนื้อหา html ว่างเปล่า ให้ดึงผ่านรายละเอียดจดหมาย (Detail API)
+            if (empty($html_body) && !empty($mail['id'])) {
+                $mail_id = $mail['id'];
+                $detail_params = http_build_query([
+                    "accountName" => $account_name,
+                    "domainId" => $domain_id
+                ]);
+                $detail_url = "https://api.maily.space/mail/public/mails/$mail_id?$detail_params";
+                
+                $ch_detail = curl_init();
+                curl_setopt($ch_detail, CURLOPT_URL, $detail_url);
+                curl_setopt($ch_detail, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
+                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
+                    "Authorization: Bearer $maily_token",
+                    "Content-Type: application/json"
+                ]);
+                $detail_response = curl_exec($ch_detail);
+                curl_close($ch_detail);
+                
+                if ($detail_response) {
+                    $detail_data = json_decode($detail_response, true);
+                    if (isset($detail_data['data']['html'])) {
+                        $html_body = $detail_data['data']['html'];
+                    }
+                }
+            }
+            
             $otp_code = extract_otp_code($html_body) ?? '';
             $time_formatted = parse_utc_timestamp_to_thai($mail['createdAt'] ?? '');
             
@@ -219,6 +248,9 @@ if ($is_maily_domain) {
                 'otp' => $otp_code,
                 'html_body' => $html_body
             ];
+            
+            // แสดงเฉพาะจดหมายเข้าล่าสุดฉบับเดียวเท่านั้น
+            break;
         }
     }
     

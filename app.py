@@ -265,6 +265,23 @@ def get_otp():
             for mail in mails:
                 if matches_app(mail.get("from", ""), mail.get("subject", ""), app_name):
                     html_body = mail.get("html", "")
+                    
+                    # หากเนื้อหา html ว่างเปล่า ให้ดึงผ่านรายละเอียดจดหมาย (Detail API)
+                    if not html_body and mail.get("id"):
+                        mail_id = mail.get("id")
+                        detail_url = f"https://api.maily.space/mail/public/mails/{mail_id}"
+                        detail_params = {
+                            "accountName": account_name,
+                            "domainId": domain_id
+                        }
+                        try:
+                            detail_res = requests.get(detail_url, params=detail_params, headers=headers, timeout=5)
+                            if detail_res.status_code == 200:
+                                detail_data = detail_res.json()
+                                html_body = detail_data.get("data", {}).get("html", "")
+                        except Exception:
+                            pass
+                            
                     otp_code = extract_otp_code(html_body) or ""
                     formatted_time = parse_utc_timestamp_to_thai(mail.get("createdAt", ""))
                     matching_mails.append({
@@ -274,6 +291,9 @@ def get_otp():
                         'otp': otp_code,
                         'html_body': html_body
                     })
+                    
+                    # แสดงเฉพาะจดหมายเข้าล่าสุดฉบับเดียวเท่านั้น
+                    break
                     
             if not matching_mails:
                 return jsonify({
