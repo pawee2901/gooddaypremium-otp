@@ -131,10 +131,13 @@ function parse_cloud_run_date_to_thai($date_str) {
 // ฟังก์ชันแกะตัวเลข OTP อย่างแม่นยำจาก HTML Body
 function extract_otp_code($html_body) {
     if (empty($html_body)) return null;
-    $plain_text = strip_tags($html_body);
     
-    // 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด
-    if (preg_match('/(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัสคือ|รหัสยืนยันคือ|โค้ดคือ|โค้ด)\s*(?:คือ|:|\s)\s*(\d{4,8})/ui', $plain_text, $matches)) {
+    // ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อนเพื่อป้องกันการดึงรหัสสี/สไตล์ (เช่น #121212)
+    $clean_html = preg_replace('/<(style|script)\b[^>]*>(.*?)<\/\1>/is', '', $html_body);
+    $plain_text = strip_tags($clean_html);
+    
+    // 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด (รองรับคำเชื่อม "ของคุณ/ของท่าน")
+    if (preg_match('/(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัส|โค้ด)(?:\s*(?:ของคุณ|ของท่าน))?\s*(?:คือ|:|\s)\s*(\d{4,8})/ui', $plain_text, $matches)) {
         return $matches[1];
     }
     
@@ -154,7 +157,10 @@ function extract_otp_code($html_body) {
 // ฟังก์ชันดึงรหัสอ้างอิง (Reference Code) จาก HTML Body
 function extract_ref_code($html_body) {
     if (empty($html_body)) return '';
-    $plain_text = strip_tags($html_body);
+    
+    // ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อน
+    $clean_html = preg_replace('/<(style|script)\b[^>]*>(.*?)<\/\1>/is', '', $html_body);
+    $plain_text = strip_tags($clean_html);
     
     if (preg_match('/(?:รหัสอ้างอิง|อ้างอิง|Ref|Reference)\s*(?:คือ|:|\s)\s*([A-Za-z0-9]{4,10})/ui', $plain_text, $matches)) {
         return $matches[1];

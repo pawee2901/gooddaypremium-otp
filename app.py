@@ -164,10 +164,12 @@ def extract_otp_code(html_body):
     if not html_body:
         return None
         
-    plain_text = re.sub(r'<[^>]+>', ' ', html_body)
+    # ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อนเพื่อป้องกันการดึงรหัสสี/สไตล์ (เช่น #121212)
+    clean_html = re.sub(r'<(style|script)\b[^>]*>(.*?)</\1>', '', html_body, flags=re.IGNORECASE | re.DOTALL)
+    plain_text = re.sub(r'<[^>]+>', ' ', clean_html)
     
-    # 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด
-    pattern = r'(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัสคือ|รหัสยืนยันคือ|โค้ดคือ|โค้ด)\s*(?:คือ|:|\s)\s*(\d{4,8})'
+    # 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด (รองรับคำเชื่อม "ของคุณ/ของท่าน")
+    pattern = r'(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัส|โค้ด)(?:\s*(?:ของคุณ|ของท่าน))?\s*(?:คือ|:|\s)\s*(\d{4,8})'
     match = re.search(pattern, plain_text, re.IGNORECASE)
     if match:
         return match.group(1)
@@ -188,7 +190,11 @@ def extract_otp_code(html_body):
 def extract_ref_code(html_body):
     if not html_body:
         return ""
-    plain_text = re.sub(r'<[^>]+>', ' ', html_body)
+        
+    # ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อน
+    clean_html = re.sub(r'<(style|script)\b[^>]*>(.*?)</\1>', '', html_body, flags=re.IGNORECASE | re.DOTALL)
+    plain_text = re.sub(r'<[^>]+>', ' ', clean_html)
+    
     pattern = r'(?:รหัสอ้างอิง|อ้างอิง|Ref|Reference)\s*(?:คือ|:|\s)\s*([A-Za-z0-9]{4,10})'
     match = re.search(pattern, plain_text, re.IGNORECASE)
     if match:
