@@ -267,7 +267,7 @@ def get_otp():
                 "domainId": domain_id.strip()
             }
             
-            response = requests.get(API_URL, params=params, headers=headers, timeout=10)
+            response = requests.get(API_URL, params=params, headers=headers, timeout=10, verify=False)
             
             if response.status_code != 200:
                 return jsonify({
@@ -298,7 +298,7 @@ def get_otp():
                             "domainId": domain_id
                         }
                         try:
-                            detail_res = requests.get(detail_url, params=detail_params, headers=headers, timeout=5)
+                            detail_res = requests.get(detail_url, params=detail_params, headers=headers, timeout=5, verify=False)
                             if detail_res.status_code == 200:
                                 detail_data = detail_res.json()
                                 html_body = detail_data.get("data", {}).get("html", "")
@@ -355,7 +355,7 @@ def get_otp():
         }
         
         try:
-            response = requests.get(CLOUD_RUN_URL, params=params, timeout=10)
+            response = requests.get(CLOUD_RUN_URL, params=params, timeout=10, verify=False)
             
             if response.status_code != 200:
                 return jsonify({

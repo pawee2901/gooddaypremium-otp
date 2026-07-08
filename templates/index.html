@@ -232,9 +232,9 @@
             <!-- 2. Detailed Email View (หน้าจอแรนเดอร์จดหมายจริงฉบับเต็ม) -->
             <div id="emailDetailView" class="hidden p-4 md:p-6 space-y-5">
                 <div class="flex items-center justify-between border-b border-gray-50 pb-2">
-                    <button onclick="showInboxList()" class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-black font-semibold transition-all">
+                    <button onclick="goBackToSelection()" class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-black font-semibold transition-all">
                         <i class="fa-solid fa-chevron-left text-[9px]"></i>
-                        <span>ย้อนกลับไปกล่องข้อความ</span>
+                        <span>ย้อนกลับไปหน้าค้นหา</span>
                     </button>
                     <span id="detailEmailTime" class="text-[10px] text-gray-400 font-medium"></span>
                 </div>
@@ -537,6 +537,13 @@
                             
                             // ลบหน้าต่าง Error หากพบข้อมูลแล้ว
                             document.getElementById('errorBox').classList.add('hidden');
+                            
+                            // แสดงหน้าดีเทลและคัดลอกรหัสทันที
+                            openEmailDetail(0);
+                            copyOTP();
+                            
+                            // หยุดดึงข้อมูลสด
+                            stopOTPPolling();
                         }
                     }
                 } catch (e) {
@@ -625,14 +632,16 @@
                 if (data.success && data.emails && data.emails.length > 0) {
                     currentEmails = data.emails;
                     renderEmails(data.emails, appName);
+                    // แสดงหน้าดีเทลและคัดลอกรหัสทันที
+                    openEmailDetail(0);
+                    copyOTP();
                 } else {
                     // หากไม่พบจดหมายในวิแรก: ให้เปลี่ยนหน้ามาหน้ารอรับรหัส Dynamic แบบไหลลื่น!
                     currentEmails = [];
                     renderEmails([], appName);
+                    // เริ่มกระบวนการสืบค้นสดอัปเดตอัตโนมัติ (Live Polling)
+                    startOTPPolling(emailInput);
                 }
-
-                // เริ่มกระบวนการสืบค้นสดอัปเดตอัตโนมัติ (Live Polling)
-                startOTPPolling(emailInput);
 
                 setTimeout(() => {
                     statusBox.classList.add('hidden');

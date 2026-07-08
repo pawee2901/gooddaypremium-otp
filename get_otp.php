@@ -198,6 +198,8 @@ if ($is_maily_domain) {
     curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         "Authorization: Bearer $maily_token",
         "Content-Type: application/json"
@@ -245,6 +247,8 @@ if ($is_maily_domain) {
                 curl_setopt($ch_detail, CURLOPT_URL, $detail_url);
                 curl_setopt($ch_detail, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
+                curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
                 curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
                     "Authorization: Bearer $maily_token",
                     "Content-Type: application/json"
@@ -308,6 +312,8 @@ if ($is_maily_domain) {
     curl_setopt($ch, CURLOPT_URL, "$cloud_run_url?$query_params");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
