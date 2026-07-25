@@ -1,8 +1,80 @@
 {
-    "shop_name": "หมวย",
-    "logo_path": "/static/logo_custom_1780392228.jpg",
-    "disney_logo_path": "",
-    "trueid_logo_path": "",
+    "shop_name": "gooddaypremium",
+    "logo_path": "/static/logo_custom_1780413642.png",
+    "disney_logo_path": "/static/logo_disney_1780413683.jpg",
+    "trueid_logo_path": "/static/logo_trueid_1780413707.jpg",
     "admin_username": "admin1",
-    "admin_password": "123456789"
+    "admin_password": "123456789",
+    "api_key_1": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
+    "api_key_2": "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5",
+    "apps": [
+        {
+            "id": "app_disney",
+            "name": "Disney+",
+            "code": "DN",
+            "logo_path": "/static/logo_disney_1780413683.jpg",
+            "keywords": "disney",
+            "bg_color": "#F0F7FF",
+            "border_color": "#D6E9FF",
+            "active": true
+        },
+        {
+            "id": "app_trueid",
+            "name": "TrueID",
+            "code": "TM",
+            "logo_path": "/static/logo_trueid_1780413707.jpg",
+            "keywords": "true",
+            "bg_color": "#FFF5FA",
+            "border_color": "#FFE2F3",
+            "active": true
+        },
+        {
+            "id": "app_1784958201",
+            "name": "GPT",
+            "code": "GPT",
+            "logo_path": "/static/app_logo_1784958201_914.png",
+            "keywords": "gpt",
+            "bg_color": "#f0f7ff",
+            "border_color": "#d6e9ff",
+            "active": true
+        }
+    ],
+    "imap_emails": [
+        {
+            "id": "email_1",
+            "email": "amethystejenala@outlook.com",
+            "provider": "hotmail",
+            "host": "outlook.office365.com",
+            "port": 993,
+            "password": "",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_2",
+            "email": "phakhbona@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "",
+            "app_id": "all",
+            "active": true
+        }
+    ],
+    "api_providers": [
+        {
+            "id": "maily_space_1",
+            "name": "Maily Space Key 1",
+            "type": "maily",
+            "token": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
+            "active": true
+        },
+        {
+            "id": "maily_space_2",
+            "name": "Maily Space Key 2",
+            "type": "maily",
+            "token": "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5",
+            "active": true
+        }
+    ]
 }

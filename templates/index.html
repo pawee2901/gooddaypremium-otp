@@ -100,17 +100,17 @@
                 <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">เลือกแอปที่ต้องการรับรหัสยืนยัน</h2>
             </div>
 
-            <!-- Grid ของปุ่มเลือกแอป (สไตล์น่ารักมินิมอลสีขาวพาสเทล) -->
+            <!-- Grid ของปุ่มเลือกแอป (สไตล์น่ารักมินิมอลสีขาวพาสเทล - Dynamic Apps) -->
             <div class="grid grid-cols-2 gap-4">
-                
+                {% if not apps %}
                 <!-- 1. Disney+ Card -->
                 <div onclick="selectApp('Disney+')" 
                      class="app-btn bg-[#F0F7FF] border border-[#D6E9FF] rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group">
-                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-[#D6E9FF] flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:border-[#D6E9FF]/10">
+                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-[#D6E9FF] flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110 p-1">
                         {% if disney_logo_path %}
-                        <img src="{{ disney_logo_path }}" alt="Disney+ logo" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-115 group-hover:rotate-1 group-hover:drop-shadow-[0_0_8px_rgba(30,58,138,0.5)]">
+                        <img src="{{ disney_logo_path }}" alt="Disney+ logo" class="w-full h-full object-contain">
                         {% else %}
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-12 h-6 object-contain transition-all duration-300 group-hover:scale-115 group-hover:rotate-1 group-hover:drop-shadow-[0_0_8px_rgba(30,58,138,0.5)]">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-12 h-6 object-contain">
                         {% endif %}
                     </div>
                     <span class="text-base md:text-lg font-extrabold text-gray-800">Disney+</span>
@@ -119,16 +119,31 @@
                 <!-- 2. TrueID Card -->
                 <div onclick="selectApp('TrueID')" 
                      class="app-btn bg-[#FFF5FA] border border-[#FFE2F3] rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group">
-                    <div class="w-14 h-14 {% if trueid_logo_path %}bg-white border-[#FFE2F3]{% else %}bg-[#E50914] border-[#E50914]{% endif %} rounded-2xl shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 border transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
+                    <div class="w-14 h-14 {% if trueid_logo_path %}bg-white border-[#FFE2F3]{% else %}bg-[#E50914] border-[#E50914]{% endif %} rounded-2xl shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 border transition-all duration-300 group-hover:scale-110 p-1">
                         {% if trueid_logo_path %}
-                        <img src="{{ trueid_logo_path }}" alt="TrueID logo" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
+                        <img src="{{ trueid_logo_path }}" alt="TrueID logo" class="w-full h-full object-cover">
                         {% else %}
                         <span class="text-[12px] font-black text-white tracking-tighter leading-none select-none uppercase">trueID</span>
                         {% endif %}
                     </div>
                     <span class="text-base md:text-lg font-extrabold text-gray-800">TrueID</span>
                 </div>
-
+                {% else %}
+                {% for app in apps %}
+                <div onclick="selectApp('{{ app.name }}')" 
+                     class="app-btn rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group transition-all duration-300 shadow-xs border"
+                     style="background-color: {{ app.bg_color or '#F0F7FF' }}; border-color: {{ app.border_color or '#D6E9FF' }};">
+                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110 p-1">
+                        {% if app.logo_path %}
+                        <img src="{{ app.logo_path }}" alt="{{ app.name }} logo" class="w-full h-full object-contain">
+                        {% else %}
+                        <span class="text-xs font-black text-purple-700 tracking-tighter uppercase select-none">{{ app.name[:6] }}</span>
+                        {% endif %}
+                    </div>
+                    <span class="text-base md:text-lg font-extrabold text-gray-800">{{ app.name }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
             </div>
         </div>
 

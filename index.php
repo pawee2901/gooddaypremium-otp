@@ -121,35 +121,37 @@ if (file_exists($config_path)) {
                 <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">เลือกแอปที่ต้องการรับรหัสยืนยัน</h2>
             </div>
 
-            <!-- Grid ของปุ่มเลือกแอป (สไตล์น่ารักมินิมอลสีขาวพาสเทล) -->
+            <!-- Grid ของปุ่มเลือกแอป (สไตล์น่ารักมินิมอลสีขาวพาสเทล - แสดงผลตามการตั้งค่าแบบ Dynamic) -->
             <div class="grid grid-cols-2 gap-4">
-                
-                <!-- 1. Disney+ Card -->
-                <div onclick="selectApp('Disney+')" 
-                     class="app-btn bg-[#F0F7FF] border border-[#D6E9FF] rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group">
-                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-[#D6E9FF] flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:border-[#D6E9FF]/10">
-                        <?php if (!empty($config['disney_logo_path'])): ?>
-                        <img src="<?php echo htmlspecialchars($config['disney_logo_path']); ?>" alt="Disney+ logo" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-115 group-hover:rotate-1 group-hover:drop-shadow-[0_0_8px_rgba(30,58,138,0.5)]">
+                <?php 
+                $apps_list = isset($config['apps']) && is_array($config['apps']) ? $config['apps'] : [];
+                if (empty($apps_list)) {
+                    $apps_list = [
+                        ['name' => 'Disney+', 'logo_path' => $config['disney_logo_path'] ?? '', 'bg_color' => '#F0F7FF', 'border_color' => '#D6E9FF'],
+                        ['name' => 'TrueID', 'logo_path' => $config['trueid_logo_path'] ?? '', 'bg_color' => '#FFF5FA', 'border_color' => '#FFE2F3']
+                    ];
+                }
+                foreach ($apps_list as $app_item):
+                    $app_name = htmlspecialchars($app_item['name']);
+                    $bg_col = htmlspecialchars($app_item['bg_color'] ?? '#F0F7FF');
+                    $border_col = htmlspecialchars($app_item['border_color'] ?? '#D6E9FF');
+                    $logo = htmlspecialchars($app_item['logo_path'] ?? '');
+                ?>
+                <div onclick="selectApp('<?php echo $app_name; ?>')" 
+                     class="app-btn rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group transition-all duration-300 shadow-xs border"
+                     style="background-color: <?php echo $bg_col; ?>; border-color: <?php echo $border_col; ?>;">
+                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110 p-1">
+                        <?php if (!empty($logo)): ?>
+                        <img src="<?php echo $logo; ?>" alt="<?php echo $app_name; ?> logo" class="w-full h-full object-contain transition-all duration-300">
+                        <?php elseif (strpos(strtolower($app_name), 'disney') !== false): ?>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-12 h-6 object-contain">
                         <?php else: ?>
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-12 h-6 object-contain transition-all duration-300 group-hover:scale-115 group-hover:rotate-1 group-hover:drop-shadow-[0_0_8px_rgba(30,58,138,0.5)]">
+                        <span class="text-xs font-black text-purple-700 tracking-tighter uppercase select-none"><?php echo substr($app_name, 0, 6); ?></span>
                         <?php endif; ?>
                     </div>
-                    <span class="text-base md:text-lg font-extrabold text-gray-800">Disney+</span>
+                    <span class="text-base md:text-lg font-extrabold text-gray-800"><?php echo $app_name; ?></span>
                 </div>
-
-                <!-- 2. TrueID Card -->
-                <div onclick="selectApp('TrueID')" 
-                     class="app-btn bg-[#FFF5FA] border border-[#FFE2F3] rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group">
-                    <div class="w-14 h-14 <?php echo !empty($config['trueid_logo_path']) ? 'bg-white border-[#FFE2F3]' : 'bg-[#E50914] border-[#E50914]'; ?> rounded-2xl shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 border transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
-                        <?php if (!empty($config['trueid_logo_path'])): ?>
-                        <img src="<?php echo htmlspecialchars($config['trueid_logo_path']); ?>" alt="TrueID logo" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] group-hover:drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
-                        <?php else: ?>
-                        <span class="text-[12px] font-black text-white tracking-tighter leading-none select-none uppercase">trueID</span>
-                        <?php endif; ?>
-                    </div>
-                    <span class="text-base md:text-lg font-extrabold text-gray-800">TrueID</span>
-                </div>
-
+                <?php endforeach; ?>
             </div>
         </div>
 

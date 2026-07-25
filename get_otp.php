@@ -35,8 +35,23 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // =========================================================================
 // 2. การตั้งค่าการเชื่อมต่อ API จริง (Maily Space & Cloud Run)
 // =========================================================================
+$config_path = __DIR__ . '/config.json';
+$config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
+
 $maily_api_url = "https://api.maily.space/mail/public/mails";
-$maily_token = "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1"; // Production Token
+$maily_tokens = [];
+if (isset($config_data['api_providers']) && is_array($config_data['api_providers'])) {
+    foreach ($config_data['api_providers'] as $p) {
+        if (!empty($p['token']) && ($p['type'] ?? 'maily') === 'maily') {
+            $maily_tokens[] = trim($p['token']);
+        }
+    }
+}
+if (empty($maily_tokens)) {
+    $token_1 = $config_data['api_key_1'] ?? "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1";
+    $token_2 = $config_data['api_key_2'] ?? "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5";
+    $maily_tokens = array_values(array_filter([$token_1, $token_2]));
+}
 $cloud_run_url = "https://getemails-wfudlrftlq-uc.a.run.app/getEmails";
 
 // ฟังก์ชันแปลงชื่อบริการเป็นรหัสย่อของระบบ RDCW Cloud Run
@@ -168,6 +183,20 @@ function extract_ref_code($html_body) {
     return '';
 }
 
+if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+    foreach ($config_data['imap_emails'] as $item) {
+        if (strtolower($item['email'] ?? '') === strtolower($email)) {
+            if (isset($item['active']) && $item['active'] === false) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'อีเมลนี้ถูกปิดล็อกการใช้งานชั่วคราวจากผู้ดูแลระบบ (กรุณาติดต่อแอดมิน)'
+                ]);
+                exit;
+            }
+        }
+    }
+}
+
 $lower_email = strtolower($email);
 $is_maily_domain = false;
 $maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"];
@@ -194,30 +223,45 @@ if ($is_maily_domain) {
         "domainId" => $domain_id
     ]);
     
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer $maily_token",
-        "Content-Type: application/json"
-    ]);
+    $response = false;
+    $http_code = 0;
+    $working_token = "";
     
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_err = curl_error($ch);
-    curl_close($ch);
-    
-    if ($curl_err || $http_code !== 200) {
+    foreach ($maily_tokens as $token) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $token",
+            "Content-Type: application/json"
+        ]);
+        
+        $res = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($code === 200 && $res) {
+            $test_data = json_decode($res, true);
+            if (isset($test_data['data']['mails'])) {
+                $response = $res;
+                $http_code = $code;
+                $working_token = $token;
+                break;
+            }
+        }
+    }
+
+    if ($http_code !== 200 || !$response) {
         echo json_encode([
             'success' => false,
             'message' => 'ไม่สามารถเชื่อมต่อระบบ Maily Space ได้ชั่วคราว กรุณาลองใหม่อีกครั้ง'
         ]);
         exit;
     }
-    
+
     $data = json_decode($response, true);
     $mails = isset($data['data']['mails']) ? $data['data']['mails'] : [];
     
@@ -250,7 +294,7 @@ if ($is_maily_domain) {
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
                 curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
-                    "Authorization: Bearer $maily_token",
+                    "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
                     "Content-Type: application/json"
                 ]);
                 $detail_response = curl_exec($ch_detail);

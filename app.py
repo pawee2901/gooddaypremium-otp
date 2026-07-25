@@ -24,7 +24,9 @@ def load_config():
             "disney_logo_path": "",
             "trueid_logo_path": "",
             "admin_username": "admin",
-            "admin_password": "admin1234"
+            "admin_password": "admin1234",
+            "api_key_1": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
+            "api_key_2": "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5"
         }
         with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(default_config, f, indent=4, ensure_ascii=False)
@@ -39,7 +41,9 @@ def load_config():
             "disney_logo_path": "",
             "trueid_logo_path": "",
             "admin_username": "admin",
-            "admin_password": "admin1234"
+            "admin_password": "admin1234",
+            "api_key_1": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
+            "api_key_2": "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5"
         }
 
 def save_config(config):
@@ -211,7 +215,8 @@ def index():
                            shop_name=config.get('shop_name', 'gooddaypremium'), 
                            logo_path=config.get('logo_path', '/static/logo.jpg'),
                            disney_logo_path=config.get('disney_logo_path', ''),
-                           trueid_logo_path=config.get('trueid_logo_path', ''))
+                           trueid_logo_path=config.get('trueid_logo_path', ''),
+                           apps=config.get('apps', []))
 
 # =========================================================================
 # Route 2: หลังบ้านประมวลผลค้นหา OTP (POST Asynchronous)
@@ -239,6 +244,15 @@ def get_otp():
             'message': 'รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง'
         }), 400
 
+    config_data = load_config()
+    for item in config_data.get('imap_emails', []):
+        if item.get('email', '').strip().lower() == email_input.lower():
+            if item.get('active') is False:
+                return jsonify({
+                    'success': False,
+                    'message': 'อีเมลนี้ถูกปิดล็อกการใช้งานชั่วคราวจากผู้ดูแลระบบ (กรุณาติดต่อแอดมิน)'
+                }), 200
+
     lower_email = email_input.lower()
     is_maily_domain = False
     maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"] # โดเมนหลักของ Maily Space
@@ -256,18 +270,40 @@ def get_otp():
             account_name, domain = email_input.split("@", 1)
             domain_id = domain.lower().replace(".", "")
             
-            headers = {
-                "Authorization": f"Bearer {API_TOKEN}",
-                "Content-Type": "application/json"
-            }
             params = {
                 "size": 15,
                 "page": 1,
                 "accountName": account_name.lower().strip(),
                 "domainId": domain_id.strip()
             }
-            
-            response = requests.get(API_URL, params=params, headers=headers, timeout=10, verify=False)
+
+            config_data = load_config()
+            maily_tokens = [p.get('token', '').strip() for p in config_data.get('api_providers', []) if p.get('token') and p.get('type', 'maily') == 'maily']
+            if not maily_tokens:
+                token_1 = config_data.get('api_key_1') or "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1"
+                token_2 = config_data.get('api_key_2') or "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5"
+                maily_tokens = [t for t in [token_1, token_2] if t]
+
+            response = None
+            working_token = ""
+            for token in maily_tokens:
+                h = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json"
+                }
+                res = requests.get(API_URL, params=params, headers=h, timeout=10, verify=False)
+                if res.status_code == 200:
+                    try:
+                        res_data = res.json()
+                        if res_data.get("data", {}).get("mails") is not None:
+                            response = res
+                            working_token = token
+                            break
+                    except Exception:
+                        pass
+            if not response:
+                response = requests.Response()
+                response.status_code = 500
             
             if response.status_code != 200:
                 return jsonify({
@@ -298,7 +334,8 @@ def get_otp():
                             "domainId": domain_id
                         }
                         try:
-                            detail_res = requests.get(detail_url, params=detail_params, headers=headers, timeout=5, verify=False)
+                            detail_headers = {"Authorization": f"Bearer {working_token or token_1}", "Content-Type": "application/json"}
+                            detail_res = requests.get(detail_url, params=detail_params, headers=detail_headers, timeout=5, verify=False)
                             if detail_res.status_code == 200:
                                 detail_data = detail_res.json()
                                 html_body = detail_data.get("data", {}).get("html", "")
@@ -430,6 +467,11 @@ def admin():
                            logo_path=config.get('logo_path', '/static/logo.jpg'),
                            disney_logo_path=config.get('disney_logo_path', ''),
                            trueid_logo_path=config.get('trueid_logo_path', ''),
+                           api_key_1=config.get('api_key_1', ''),
+                           api_key_2=config.get('api_key_2', ''),
+                           apps=config.get('apps', []),
+                           imap_emails=config.get('imap_emails', []),
+                           api_providers=config.get('api_providers', []),
                            logged_in=session.get('admin_logged_in', False))
 
 @app.route('/admin/login', methods=['POST'])
@@ -468,10 +510,206 @@ def admin_update():
         config['admin_username'] = new_username
     if new_password:
         config['admin_password'] = new_password
+    if 'api_key_1' in request.form:
+        config['api_key_1'] = request.form.get('api_key_1', '').strip()
+    if 'api_key_2' in request.form:
+        config['api_key_2'] = request.form.get('api_key_2', '').strip()
         
     if save_config(config):
         return jsonify({'success': True, 'message': 'บันทึกข้อมูลเรียบร้อยแล้ว'})
     return jsonify({'success': False, 'message': 'ไม่สามารถบันทึกข้อมูลได้'}), 500
+
+@app.route('/admin/add_imap_email', methods=['POST'])
+def admin_add_imap_email():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    
+    email_addr = request.form.get('email', '').strip()
+    password = request.form.get('password', '').strip()
+    provider = request.form.get('provider', 'gmail').strip()
+    host = request.form.get('host', '').strip()
+    port = int(request.form.get('port', 993))
+    
+    if not email_addr:
+        return jsonify({'success': False, 'message': 'กรุณาระบุที่อยู่อีเมล'}), 400
+        
+    if not host:
+        if provider == 'gmail' or '@gmail' in email_addr.lower():
+            host = 'imap.gmail.com'
+        elif provider == 'hotmail' or any(d in email_addr.lower() for d in ['@hotmail', '@outlook', '@live']):
+            host = 'outlook.office365.com'
+        else:
+            host = 'imap.gmail.com'
+            
+    config = load_config()
+    imap_emails = config.get('imap_emails', [])
+    
+    found_idx = -1
+    for idx, item in enumerate(imap_emails):
+        if item.get('email', '').lower() == email_addr.lower():
+            found_idx = idx
+            break
+            
+    new_item = {
+        'id': imap_emails[found_idx]['id'] if found_idx >= 0 else f"email_{int(time.time())}",
+        'email': email_addr,
+        'provider': provider,
+        'host': host,
+        'port': port,
+        'password': password if password else (imap_emails[found_idx].get('password', '') if found_idx >= 0 else ''),
+        'app_id': 'all',
+        'active': True
+    }
+    
+    if found_idx >= 0:
+        imap_emails[found_idx] = new_item
+    else:
+        imap_emails.append(new_item)
+        
+    config['imap_emails'] = imap_emails
+    save_config(config)
+    return jsonify({'success': True, 'message': 'บันทึกอีเมลเรียบร้อยแล้ว'})
+
+@app.route('/admin/delete_imap_email', methods=['POST'])
+def admin_delete_imap_email():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    email_id = request.form.get('id', '').strip()
+    config = load_config()
+    imap_emails = config.get('imap_emails', [])
+    config['imap_emails'] = [item for item in imap_emails if item.get('id') != email_id and item.get('email') != email_id]
+    save_config(config)
+    return jsonify({'success': True, 'message': 'ลบรายการอีเมลสำเร็จ'})
+
+@app.route('/admin/toggle_email_active', methods=['POST'])
+def admin_toggle_email_active():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    email_id = request.form.get('id', '').strip()
+    active_val = request.form.get('active', 'false').lower() in ['true', '1', 'on']
+    config = load_config()
+    imap_emails = config.get('imap_emails', [])
+    for idx, item in enumerate(imap_emails):
+        if item.get('id') == email_id or item.get('email') == email_id:
+            imap_emails[idx]['active'] = active_val
+            break
+    config['imap_emails'] = imap_emails
+    save_config(config)
+    return jsonify({'success': True, 'message': 'อัปเดตสถานะอีเมลสำเร็จ'})
+
+@app.route('/admin/save_app', methods=['POST'])
+def admin_save_app():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    app_id = request.form.get('id', '').strip()
+    name = request.form.get('name', '').strip()
+    code = request.form.get('code', '').strip()
+    keywords = request.form.get('keywords', '').strip()
+    bg_color = request.form.get('bg_color', '#F0F7FF').strip()
+    border_color = request.form.get('border_color', '#D6E9FF').strip()
+    logo_path = request.form.get('logo_path', '').strip()
+    
+    if not name:
+        return jsonify({'success': False, 'message': 'กรุณาระบุชื่อแอปพลิเคชัน'}), 400
+        
+    if 'logo' in request.files:
+        file = request.files['logo']
+        if file and file.filename != '':
+            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            if ext in {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}:
+                filename = f"app_logo_{int(time.time())}_{random.randint(100, 999)}.{ext}"
+                static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+                file.save(os.path.join(static_dir, filename))
+                logo_path = f"/static/{filename}"
+                
+    config = load_config()
+    apps = config.get('apps', [])
+    found_idx = -1
+    if app_id:
+        for idx, item in enumerate(apps):
+            if item.get('id') == app_id:
+                found_idx = idx
+                break
+                
+    app_data = {
+        'id': apps[found_idx]['id'] if found_idx >= 0 else f"app_{int(time.time())}",
+        'name': name,
+        'code': code.upper() if code else 'GPT',
+        'logo_path': logo_path if logo_path else (apps[found_idx].get('logo_path', '') if found_idx >= 0 else ''),
+        'keywords': keywords.lower(),
+        'bg_color': bg_color,
+        'border_color': border_color,
+        'active': True
+    }
+    
+    if found_idx >= 0:
+        apps[found_idx] = app_data
+    else:
+        apps.append(app_data)
+        
+    config['apps'] = apps
+    save_config(config)
+    return jsonify({'success': True, 'message': 'บันทึกแอปพลิเคชันสำเร็จ'})
+
+@app.route('/admin/delete_app', methods=['POST'])
+def admin_delete_app():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    app_id = request.form.get('id', '').strip()
+    config = load_config()
+    apps = config.get('apps', [])
+    config['apps'] = [item for item in apps if item.get('id') != app_id]
+    save_config(config)
+    return jsonify({'success': True, 'message': 'ลบแอปพลิเคชันสำเร็จ'})
+
+@app.route('/admin/save_api_key', methods=['POST'])
+def admin_save_api_key():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    api_id = request.form.get('id', '').strip()
+    name = request.form.get('name', '').strip()
+    token = request.form.get('token', '').strip()
+    api_type = request.form.get('type', 'maily').strip()
+    
+    if not name or not token:
+        return jsonify({'success': False, 'message': 'กรุณากรอกชื่อและคีย์ API'}), 400
+        
+    config = load_config()
+    api_providers = config.get('api_providers', [])
+    found_idx = -1
+    if api_id:
+        for idx, item in enumerate(api_providers):
+            if item.get('id') == api_id:
+                found_idx = idx
+                break
+                
+    item_data = {
+        'id': api_providers[found_idx]['id'] if found_idx >= 0 else f"api_{int(time.time())}",
+        'name': name,
+        'token': token,
+        'type': api_type,
+        'active': True
+    }
+    
+    if found_idx >= 0:
+        api_providers[found_idx] = item_data
+    else:
+        api_providers.append(item_data)
+        
+    config['api_providers'] = api_providers
+    save_config(config)
+    return jsonify({'success': True, 'message': 'บันทึก API Key สำเร็จ'})
+
+@app.route('/admin/delete_api_key', methods=['POST'])
+def admin_delete_api_key():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    api_id = request.form.get('id', '').strip()
+    config = load_config()
+    api_providers = config.get('api_providers', [])
+    config['api_providers'] = [item for item in api_providers if item.get('id') != api_id]
+    save_config(config)
+    return jsonify({'success': True, 'message': 'ลบ API Key สำเร็จ'})
 
 @app.route('/admin/upload_logo', methods=['POST'])
 def admin_upload_logo():
