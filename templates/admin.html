@@ -284,6 +284,62 @@
         </div>
 
         <!-- ========================================== -->
+        <!-- Gmail กลาง (Forwarding Central Accounts)   -->
+        <!-- ========================================== -->
+        <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5 mt-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-blue-500 text-lg"><i class="fa-brands fa-google"></i></span>
+                        <h2 class="text-base font-extrabold text-gray-900">Gmail กลาง (รับ Forwarding จาก Hotmail)</h2>
+                    </div>
+                    <p class="text-xs text-gray-400">อีเมล Gmail ที่ตั้งค่ารับส่งต่อจาก Hotmail/Outlook — ระบบจะค้นหา OTP ในกล่องเหล่านี้โดยอัตโนมัติ</p>
+                </div>
+                <button onclick="openAddGmailCentralModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98] whitespace-nowrap">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>เพิ่ม Gmail กลาง</span>
+                </button>
+            </div>
+
+            <div id="gmailCentralList" class="space-y-3">
+                <p class="text-xs text-gray-400 text-center py-4">กำลังโหลด...</p>
+            </div>
+        </div>
+
+        <!-- Modal: เพิ่ม Gmail กลาง -->
+        <div id="gmailCentralModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-extrabold text-gray-900 text-base">เพิ่ม / อัปเดต Gmail กลาง</h3>
+                    <button onclick="closeGmailCentralModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-xs text-blue-800 leading-relaxed">
+                    <i class="fa-solid fa-circle-info mr-1 text-blue-500"></i>
+                    ใส่ Gmail + App Password (16 หลัก) ที่รับ Forward จาก Hotmail มา
+                </div>
+                <form id="gmailCentralForm" onsubmit="saveGmailCentral(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">Gmail Address</label>
+                        <input type="email" id="gmailCentralUser" required placeholder="example@gmail.com"
+                               class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">App Password (16 หลัก)</label>
+                        <input type="text" id="gmailCentralPass" required placeholder="xxxx xxxx xxxx xxxx" maxlength="19"
+                               class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        <p class="text-[10px] text-gray-400 mt-1">ไม่ใช่รหัส Gmail ปกติ — ต้องสร้างที่ Google Account &rarr; Security &rarr; App Passwords</p>
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button type="button" onclick="closeGmailCentralModal()" class="flex-1 border border-gray-200 text-gray-600 font-bold text-sm py-2.5 rounded-xl hover:bg-gray-50 transition-all">ยกเลิก</button>
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-2.5 rounded-xl transition-all active:scale-[0.98]">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
         <!-- TAB 2 CONTENT: ตั้งค่าแอปพลิเคชัน (OTP Apps) -->
         <!-- ========================================== -->
         <div id="tabContentApps" class="hidden space-y-5">
@@ -1045,6 +1101,91 @@
                 alert('เกิดความขัดข้องในการบันทึกข้อมูล');
             }
         }
+
+        // =============================================
+        // Gmail กลาง (Forwarding Central Accounts)
+        // =============================================
+        async function loadGmailCentralList() {
+            const listEl = document.getElementById('gmailCentralList');
+            if (!listEl) return;
+            try {
+                const res = await fetch('/admin/list_gmail_central');
+                const data = await res.json();
+                if (!data.success || !data.accounts || data.accounts.length === 0) {
+                    listEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">ยังไม่มี Gmail กลาง — กดปุ่ม "+ เพิ่ม Gmail กลาง" เพื่อเพิ่ม</p>';
+                    return;
+                }
+                listEl.innerHTML = data.accounts.map(acc => `
+                    <div class="flex items-center justify-between bg-blue-50/60 border border-blue-200/60 rounded-2xl px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-600">
+                                <i class="fa-brands fa-google text-sm"></i>
+                            </span>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">${acc.user}</p>
+                                <p class="text-[10px] text-gray-400">Gmail กลาง รับ Forwarding จาก Hotmail</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteGmailCentral('${acc.user}')"
+                                class="w-8 h-8 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
+                            <i class="fa-regular fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                listEl.innerHTML = '<p class="text-xs text-red-400 text-center py-4">โหลดข้อมูลไม่สำเร็จ</p>';
+            }
+        }
+
+        function openAddGmailCentralModal() {
+            document.getElementById('gmailCentralModal').classList.remove('hidden');
+            document.getElementById('gmailCentralUser').value = '';
+            document.getElementById('gmailCentralPass').value = '';
+        }
+
+        function closeGmailCentralModal() {
+            document.getElementById('gmailCentralModal').classList.add('hidden');
+        }
+
+        async function saveGmailCentral(e) {
+            e.preventDefault();
+            const user = document.getElementById('gmailCentralUser').value.trim();
+            const pass = document.getElementById('gmailCentralPass').value.replace(/\s+/g, '');
+            const fd = new FormData();
+            fd.append('gmail_user', user);
+            fd.append('gmail_pass', pass);
+            try {
+                const res = await fetch('/admin/add_gmail_central', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    closeGmailCentralModal();
+                    loadGmailCentralList();
+                } else {
+                    alert(data.message || 'บันทึกไม่สำเร็จ');
+                }
+            } catch (e) {
+                alert('เกิดข้อผิดพลาดในการบันทึก');
+            }
+        }
+
+        async function deleteGmailCentral(user) {
+            if (!confirm(`ลบ ${user} ออกจาก Gmail กลาง?`)) return;
+            const fd = new FormData();
+            fd.append('gmail_user', user);
+            try {
+                const res = await fetch('/admin/delete_gmail_central', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) loadGmailCentralList();
+                else alert(data.message || 'ลบไม่สำเร็จ');
+            } catch (e) {
+                alert('เกิดข้อผิดพลาดในการลบ');
+            }
+        }
+
+        // โหลดรายการ Gmail กลางเมื่อ Admin login แล้ว
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGmailCentralList();
+        });
     </script>
 </body>
 </html>

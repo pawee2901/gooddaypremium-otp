@@ -84,6 +84,20 @@ API_URL = "https://api.maily.space/mail/public/mails"
 API_TOKEN = "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1"  # คีย์ลับ API Token
 CLOUD_RUN_URL = "https://getemails-wfudlrftlq-uc.a.run.app/getEmails"  # Cloud Run mapping API
 
+# Gmail กลางสำหรับรับ Forwarding จาก Hotmail/Outlook (ค่าเริ่มต้น หากยังไม่ได้ตั้งค่าใน Admin)
+GMAIL_CENTRAL_ACCOUNTS_DEFAULT = [
+    {"user": "jj8168902@gmail.com",  "pass": "wlfeoxoroayxoken"},
+    {"user": "phakhbona@gmail.com",   "pass": "gtxlslpvzosnztrt"},
+]
+
+def get_gmail_central_accounts():
+    """โหลดรายการ Gmail กลางจาก config.json (ถ้าไม่มีให้ใช้ค่าเริ่มต้น)"""
+    config = load_config()
+    accounts = config.get('gmail_central_accounts', [])
+    if accounts:
+        return accounts
+    return GMAIL_CENTRAL_ACCOUNTS_DEFAULT
+
 # ฟังก์ชันแปลงชื่อแอปเป็นรหัสย่อตามระบบของ RDCW
 def get_app_code(app_name):
     lower_name = app_name.lower()
@@ -390,71 +404,175 @@ def get_otp():
             "senderEmail": email_input.strip(),
             "appCode": app_code
         }
-        
+
+        matching_mails = []
+
+        # --- ลองดึงจาก Cloud Run ก่อน ---
         try:
             response = requests.get(CLOUD_RUN_URL, params=params, timeout=10, verify=False)
-            
-            if response.status_code != 200:
-                return jsonify({
-                    'success': False,
-                    'message': f'ระบบคลาวด์ตอบกลับขัดข้อง (โค้ดสถานะ: {response.status_code})'
-                }), 200
-                
-            api_data = response.json()
-            emails = api_data.get("emails", [])
-            
-            if not emails:
-                return jsonify({
-                    'success': False,
-                    'message': f'ไม่พบอีเมลยืนยันตัวตนล่าสุดของ {app_name} ส่งมายัง {email_input} (กรุณากดส่งรหัส OTP หรือตรวจสอบว่าคุณลงทะเบียนเมลนี้แล้ว)'
-                }), 200
-                
-            matching_mails = []
-            for mail in emails:
-                html_body = mail.get("html", "")
-                
-                # ดึงเฉพาะเนื้อหา Table หลักหากพบเพื่อป้องกัน overflow หน้าเว็บ
-                if html_body:
-                    table_idx = html_body.find("<table")
-                    if table_idx != -1:
-                        html_body = html_body[table_idx:]
-                        
-                otp_code = extract_otp_code(html_body) or ""
-                ref_code = extract_ref_code(html_body) or ""
-                formatted_time = parse_cloud_run_date_to_thai(mail.get("date", ""))
-                
-                matching_mails.append({
-                    'subject': mail.get("subject", "ไม่มีหัวข้อ"),
-                    'from': mail.get("sender", f"{app_name} Security"),
-                    'time': formatted_time,
-                    'otp': otp_code,
-                    'ref': ref_code,
-                    'html_body': html_body
-                })
-                
-            if not matching_mails:
-                return jsonify({
-                    'success': False,
-                    'message': f'ไม่พบอีเมลยืนยันตัวตนล่าสุดสำหรับ {app_name}'
-                }), 200
-                
-            return jsonify({
-                'success': True,
-                'app_name': app_name,
-                'email': email_input,
-                'emails': matching_mails
-            })
-            
-        except requests.exceptions.RequestException as e:
+
+            if response.status_code == 200:
+                api_data = response.json()
+                emails = api_data.get("emails", [])
+
+                for mail in emails:
+                    html_body = mail.get("html", "")
+                    if html_body:
+                        table_idx = html_body.find("<table")
+                        if table_idx != -1:
+                            html_body = html_body[table_idx:]
+
+                    otp_code = extract_otp_code(html_body) or ""
+                    ref_code = extract_ref_code(html_body) or ""
+                    formatted_time = parse_cloud_run_date_to_thai(mail.get("date", ""))
+
+                    matching_mails.append({
+                        'subject': mail.get("subject", "ไม่มีหัวข้อ"),
+                        'from': mail.get("sender", f"{app_name} Security"),
+                        'time': formatted_time,
+                        'otp': otp_code,
+                        'ref': ref_code,
+                        'html_body': html_body
+                    })
+        except Exception:
+            pass  # Cloud Run ล้มเหลว — ใช้ fallback แทน
+
+        # --- Fallback: อ่านจาก Gmail กลางที่รับ Forwarding จาก Hotmail ---
+        if not matching_mails:
+            is_hotmail = any(d in email_input.lower() for d in ['@hotmail.', '@outlook.', '@live.', '@msn.'])
+            if is_hotmail:
+                try:
+                    target_lower = email_input.strip().lower()
+                    for account in get_gmail_central_accounts():
+                        try:
+                            M = imaplib.IMAP4_SSL('imap.gmail.com', 993)
+                            M.login(account['user'], account['pass'])
+                            # เลือกโฟลเดอร์ "All Mail" ก่อน ถ้าไม่ได้ให้ใช้ INBOX
+                            status, _ = M.select('[Gmail]/All Mail', readonly=True)
+                            if status != 'OK':
+                                M.select('INBOX', readonly=True)
+
+                            # ดึง 30 อีเมลล่าสุด
+                            typ, data = M.search(None, 'ALL')
+                            all_ids = data[0].split()
+                            latest_ids = all_ids[-30:] if len(all_ids) >= 30 else all_ids
+                            latest_ids = list(reversed(latest_ids))  # เรียงใหม่สุดก่อน
+
+                            found_in_account = False
+                            for num in latest_ids:
+                                try:
+                                    typ2, msg_data = M.fetch(num, '(RFC822)')
+                                    if not msg_data or not msg_data[0]:
+                                        continue
+                                    raw = msg_data[0][1]
+                                    msg = email.message_from_bytes(raw)
+
+                                    subject_raw = msg.get('Subject', '')
+                                    try:
+                                        subject_parts = decode_header(subject_raw)
+                                        subject = ''.join(
+                                            part.decode(enc or 'utf-8') if isinstance(part, bytes) else part
+                                            for part, enc in subject_parts
+                                        )
+                                    except Exception:
+                                        subject = subject_raw
+
+                                    sender = msg.get('From', '')
+                                    date_str = msg.get('Date', '')
+
+                                    # แยก body
+                                    html_body = ''
+                                    plain_body = ''
+                                    if msg.is_multipart():
+                                        for part in msg.walk():
+                                            ct = part.get_content_type()
+                                            if ct == 'text/html':
+                                                try:
+                                                    html_body += part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+                                                except Exception:
+                                                    pass
+                                            elif ct == 'text/plain':
+                                                try:
+                                                    plain_body += part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+                                                except Exception:
+                                                    pass
+                                    else:
+                                        try:
+                                            payload = msg.get_payload(decode=True)
+                                            charset = msg.get_content_charset() or 'utf-8'
+                                            if msg.get_content_type() == 'text/html':
+                                                html_body = payload.decode(charset, errors='replace')
+                                            else:
+                                                plain_body = payload.decode(charset, errors='replace')
+                                        except Exception:
+                                            pass
+
+                                    full_text = (html_body + plain_body).lower()
+
+                                    # ตรวจว่าอีเมลนี้เกี่ยวกับ target_email หรือไม่
+                                    if target_lower not in full_text:
+                                        continue
+
+                                    # ตรวจว่าตรงกับ app_name หรือไม่
+                                    if not matches_app(sender, subject, app_name):
+                                        continue
+
+                                    # แยก table จาก html_body
+                                    display_html = html_body
+                                    if display_html:
+                                        table_idx = display_html.find('<table')
+                                        if table_idx != -1:
+                                            display_html = display_html[table_idx:]
+
+                                    otp_code = extract_otp_code(html_body or plain_body) or ""
+                                    ref_code = extract_ref_code(html_body or plain_body) or ""
+
+                                    try:
+                                        dt = email.utils.parsedate_to_datetime(date_str)
+                                        tz_thai = timezone(timedelta(hours=7))
+                                        dt_thai = dt.astimezone(tz_thai)
+                                        thai_months = {
+                                            1:'มกราคม',2:'กุมภาพันธ์',3:'มีนาคม',4:'เมษายน',
+                                            5:'พฤษภาคม',6:'มิถุนายน',7:'กรกฎาคม',8:'สิงหาคม',
+                                            9:'กันยายน',10:'ตุลาคม',11:'พฤศจิกายน',12:'ธันวาคม'
+                                        }
+                                        formatted_time = f"{dt_thai.day} {thai_months[dt_thai.month]} เวลา {dt_thai.strftime('%H:%M')} น. (ตามเวลาประเทศไทย)"
+                                    except Exception:
+                                        formatted_time = datetime.now().strftime('%d/%m/%Y %H:%M น.')
+
+                                    matching_mails.append({
+                                        'subject': subject or 'ไม่มีหัวข้อ',
+                                        'from': sender or f"{app_name} Security",
+                                        'time': formatted_time,
+                                        'otp': otp_code,
+                                        'ref': ref_code,
+                                        'html_body': display_html
+                                    })
+                                    found_in_account = True
+                                    break  # พบแล้ว ไม่ต้องดูต่อ
+                                except Exception:
+                                    continue
+
+                            M.logout()
+                            if found_in_account:
+                                break  # ไม่ต้องลองบัญชีอื่น
+                        except Exception:
+                            continue
+                except Exception as imap_err:
+                    pass  # IMAP fallback ล้มเหลว — ปล่อยผ่าน
+
+        if not matching_mails:
             return jsonify({
                 'success': False,
-                'message': f'เครือข่ายเชื่อมต่อระบบคลาวด์ขัดข้อง: {str(e)}'
+                'message': f'ไม่พบอีเมลยืนยันตัวตนล่าสุดของ {app_name} ส่งมายัง {email_input} (กรุณากดส่งรหัส OTP ให้อีกครั้ง หรือตรวจสอบการตั้งค่า Forwarding)'
             }), 200
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'เกิดปัญหาในการประมวลผลข้อความ: {str(e)}'
-            }), 200
+
+        return jsonify({
+            'success': True,
+            'app_name': app_name,
+            'email': email_input,
+            'emails': matching_mails
+        })
 
 # =========================================================================
 # Route 3: Admin Dashboard (Authentication & Settings Panel)
@@ -569,6 +687,58 @@ def admin_add_imap_email():
     config['imap_emails'] = imap_emails
     save_config(config)
     return jsonify({'success': True, 'message': 'บันทึกอีเมลเรียบร้อยแล้ว'})
+
+# ---------------------------------------------------------------------------
+# Admin: จัดการ Gmail กลาง (Forwarding Central Accounts)
+# ---------------------------------------------------------------------------
+@app.route('/admin/add_gmail_central', methods=['POST'])
+def admin_add_gmail_central():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+
+    gmail_user = request.form.get('gmail_user', '').strip()
+    gmail_pass = request.form.get('gmail_pass', '').strip()
+
+    if not gmail_user or not gmail_pass:
+        return jsonify({'success': False, 'message': 'กรุณากรอกอีเมลและ App Password'}), 400
+
+    config = load_config()
+    accounts = config.get('gmail_central_accounts', list(GMAIL_CENTRAL_ACCOUNTS_DEFAULT))
+
+    # ตรวจว่ามีอยู่แล้วหรือไม่
+    for acc in accounts:
+        if acc.get('user', '').lower() == gmail_user.lower():
+            acc['pass'] = gmail_pass  # อัปเดตรหัสผ่าน
+            config['gmail_central_accounts'] = accounts
+            save_config(config)
+            return jsonify({'success': True, 'message': f'อัปเดต {gmail_user} เรียบร้อยแล้ว'})
+
+    accounts.append({'user': gmail_user, 'pass': gmail_pass})
+    config['gmail_central_accounts'] = accounts
+    save_config(config)
+    return jsonify({'success': True, 'message': f'เพิ่ม {gmail_user} เรียบร้อยแล้ว'})
+
+
+@app.route('/admin/delete_gmail_central', methods=['POST'])
+def admin_delete_gmail_central():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+
+    gmail_user = request.form.get('gmail_user', '').strip()
+    config = load_config()
+    accounts = config.get('gmail_central_accounts', list(GMAIL_CENTRAL_ACCOUNTS_DEFAULT))
+    config['gmail_central_accounts'] = [a for a in accounts if a.get('user', '').lower() != gmail_user.lower()]
+    save_config(config)
+    return jsonify({'success': True, 'message': f'ลบ {gmail_user} เรียบร้อยแล้ว'})
+
+
+@app.route('/admin/list_gmail_central', methods=['GET'])
+def admin_list_gmail_central():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'ไม่มีสิทธิ์เข้าถึง'}), 403
+    accounts = get_gmail_central_accounts()
+    # ยิงเพียง user ออกไป (ไม่ส่ง pass)
+    return jsonify({'success': True, 'accounts': [{'user': a['user']} for a in accounts]})
 
 @app.route('/admin/delete_imap_email', methods=['POST'])
 def admin_delete_imap_email():
