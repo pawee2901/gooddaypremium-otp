@@ -27,16 +27,6 @@
             "bg_color": "#FFF5FA",
             "border_color": "#FFE2F3",
             "active": true
-        },
-        {
-            "id": "app_1784958201",
-            "name": "GPT",
-            "code": "GPT",
-            "logo_path": "/static/app_logo_1784958201_914.png",
-            "keywords": "gpt",
-            "bg_color": "#f0f7ff",
-            "border_color": "#d6e9ff",
-            "active": true
         }
     ],
     "imap_emails": [

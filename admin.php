@@ -590,27 +590,30 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         <!-- ========================================== -->
         <!-- 2. ADMIN TABS NAVIGATION (แถบแท็บ 3 ส่วน) -->
         <!-- ========================================== -->
-        <div class="grid grid-cols-3 gap-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <div class="grid grid-cols-3 gap-1.5 sm:gap-2 bg-white p-1.5 sm:p-2 rounded-2xl border border-gray-100 shadow-sm text-center">
             
             <!-- Tab 1: IMAP Email -->
             <button onclick="switchTab('imap')" id="tabBtnImap"
-                    class="tab-btn active border px-3 py-3 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-xs md:text-sm font-semibold">
-                <i class="fa-solid fa-envelope text-base sm:text-sm"></i>
-                <span class="truncate">บัญชีอีเมล IMAP</span>
+                    class="tab-btn active border px-2 sm:px-3 py-2.5 sm:py-3 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-xs md:text-sm font-semibold">
+                <i class="fa-solid fa-envelope text-sm sm:text-base"></i>
+                <span class="block sm:hidden text-[11px] font-bold">อีเมล IMAP</span>
+                <span class="hidden sm:block truncate">บัญชีอีเมล IMAP</span>
             </button>
 
             <!-- Tab 2: OTP Apps -->
             <button onclick="switchTab('apps')" id="tabBtnApps"
-                    class="tab-btn inactive border px-3 py-3 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-xs md:text-sm font-semibold">
-                <i class="fa-solid fa-mobile-screen-button text-base sm:text-sm"></i>
-                <span class="truncate">ตั้งค่าแอปพลิเคชัน (OTP Apps)</span>
+                    class="tab-btn inactive border px-2 sm:px-3 py-2.5 sm:py-3 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-xs md:text-sm font-semibold">
+                <i class="fa-solid fa-mobile-screen-button text-sm sm:text-base"></i>
+                <span class="block sm:hidden text-[11px] font-bold">แอปพลิเคชัน</span>
+                <span class="hidden sm:block truncate">ตั้งค่าแอปพลิเคชัน (OTP Apps)</span>
             </button>
 
             <!-- Tab 3: API Providers -->
             <button onclick="switchTab('api')" id="tabBtnApi"
-                    class="tab-btn inactive border px-3 py-3 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-xs md:text-sm font-semibold">
-                <i class="fa-solid fa-database text-base sm:text-sm"></i>
-                <span class="truncate">ตั้งค่า API (OTP Providers)</span>
+                    class="tab-btn inactive border px-2 sm:px-3 py-2.5 sm:py-3 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-xs md:text-sm font-semibold">
+                <i class="fa-solid fa-key text-sm sm:text-base"></i>
+                <span class="block sm:hidden text-[11px] font-bold">ตั้งค่า API</span>
+                <span class="hidden sm:block truncate">ตั้งค่า API (OTP Providers)</span>
             </button>
         </div>
 
@@ -687,13 +690,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     <?php else: foreach ($imap_emails as $item): 
                         $is_active = isset($item['active']) ? (bool)$item['active'] : true;
                     ?>
-                    <div class="border rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60 hover:border-emerald-300' : 'bg-rose-50/40 border-rose-200/60 opacity-80'; ?>">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0 <?php echo $is_active ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' : 'bg-rose-100 border border-rose-200 text-rose-700'; ?>">
+                    <div class="border rounded-2xl p-3.5 sm:p-4 flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60 hover:border-emerald-300' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>">
+                        <div class="flex items-center gap-3 min-w-0 w-full xs:w-auto">
+                            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-base sm:text-lg flex-shrink-0 <?php echo $is_active ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' : 'bg-rose-100 border border-rose-200 text-rose-700'; ?>">
                                 <i class="fa-regular fa-envelope"></i>
                             </div>
-                            <div class="min-w-0 space-y-0.5">
-                                <h3 class="text-xs md:text-sm font-extrabold text-gray-900 truncate"><?php echo htmlspecialchars($item['email']); ?></h3>
+                            <div class="min-w-0 flex-1 space-y-0.5">
+                                <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></h3>
                                 <p class="text-[10px] text-gray-400 truncate"><?php echo htmlspecialchars($item['host'] ?? 'imap.gmail.com'); ?>:<?php echo htmlspecialchars($item['port'] ?? 993); ?> &middot; <?php echo !empty($item['password']) ? 'pass: ••••••••' : 'no pass'; ?></p>
                                 <div class="pt-0.5 flex items-center gap-1.5">
                                     <?php if ($is_active): ?>
@@ -708,18 +711,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            <label class="relative inline-flex items-center cursor-pointer" title="<?php echo $is_active ? 'คลิกเพื่อล็อกอีเมลนี้' : 'คลิกเพื่อปลดล็อกอีเมลนี้'; ?>">
-                                <input type="checkbox" <?php echo $is_active ? 'checked' : ''; ?> 
-                                       onchange="toggleEmailActive('<?php echo htmlspecialchars($item['id']); ?>', this.checked)" 
-                                       class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                            </label>
+                        <div class="flex items-center justify-between xs:justify-end gap-2.5 w-full xs:w-auto border-t xs:border-t-0 pt-2 xs:pt-0 border-gray-200/50 flex-shrink-0">
+                            <span class="text-[10px] font-bold text-gray-400 block xs:hidden">สถานะอีเมล:</span>
+                            <div class="flex items-center gap-2">
+                                <label class="relative inline-flex items-center cursor-pointer" title="<?php echo $is_active ? 'คลิกเพื่อล็อกอีเมลนี้' : 'คลิกเพื่อปลดล็อกอีเมลนี้'; ?>">
+                                    <input type="checkbox" <?php echo $is_active ? 'checked' : ''; ?> 
+                                           onchange="toggleEmailActive('<?php echo htmlspecialchars($item['id']); ?>', this.checked)" 
+                                           class="sr-only peer">
+                                    <div class="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
 
-                            <button onclick="deleteEmail('<?php echo htmlspecialchars($item['id']); ?>')" title="ลบอีเมลนี้" 
-                                    class="w-8 h-8 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
-                                <i class="fa-regular fa-trash-can text-sm"></i>
-                            </button>
+                                <button onclick="deleteEmail('<?php echo htmlspecialchars($item['id']); ?>')" title="ลบอีเมลนี้" 
+                                        class="w-8 h-8 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all active:scale-95">
+                                    <i class="fa-regular fa-trash-can text-sm"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; endif; ?>
@@ -825,14 +831,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                             ยังไม่มีรายการ API Key ในระบบ กดปุ่ม "+ เพิ่ม API" เพื่อเริ่มต้นใช้งาน
                         </div>
                         <?php else: foreach ($api_providers as $api_item): ?>
-                        <div class="bg-purple-50/40 border border-purple-200/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs hover:border-purple-300 transition-all">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-11 h-11 bg-purple-100 border border-purple-200 text-purple-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                        <div class="bg-purple-50/40 border border-purple-200/60 rounded-2xl p-3.5 sm:p-4 flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs hover:border-purple-300 transition-all">
+                            <div class="flex items-center gap-3 min-w-0 w-full xs:w-auto">
+                                <div class="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 border border-purple-200 text-purple-700 rounded-xl flex items-center justify-center text-base sm:text-lg flex-shrink-0">
                                     <i class="fa-solid fa-key"></i>
                                 </div>
-                                <div class="min-w-0 space-y-0.5">
-                                    <h3 class="text-xs md:text-sm font-extrabold text-gray-900 truncate"><?php echo htmlspecialchars($api_item['name']); ?></h3>
-                                    <p class="text-[10px] text-gray-500 font-mono truncate"><?php echo htmlspecialchars($api_item['token'] ?? ''); ?></p>
+                                <div class="min-w-0 flex-1 space-y-0.5">
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 truncate" title="<?php echo htmlspecialchars($api_item['name']); ?>"><?php echo htmlspecialchars($api_item['name']); ?></h3>
+                                    <p class="text-[10px] text-gray-500 font-mono break-all sm:truncate"><?php echo htmlspecialchars($api_item['token'] ?? ''); ?></p>
                                     <div class="pt-0.5">
                                         <span class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-[9px] font-bold px-2 py-0.5 rounded-md">
                                             <?php echo htmlspecialchars(strtoupper($api_item['type'] ?? 'MAILY')); ?>
@@ -840,11 +846,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-1 flex-shrink-0">
-                                <button type="button" onclick='openEditApiKeyModal(<?php echo htmlspecialchars(json_encode($api_item)); ?>)' title="แก้ไข" class="w-8 h-8 text-gray-500 hover:text-purple-700 hover:bg-purple-100/50 rounded-lg flex items-center justify-center transition-all">
+                            <div class="flex items-center justify-end gap-1.5 w-full xs:w-auto border-t xs:border-t-0 pt-2 xs:pt-0 border-purple-100 flex-shrink-0">
+                                <button type="button" onclick='openEditApiKeyModal(<?php echo htmlspecialchars(json_encode($api_item)); ?>)' title="แก้ไข" class="px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-100/60 hover:bg-purple-200/60 rounded-lg flex items-center gap-1 transition-all">
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    <span>แก้ไข</span>
                                 </button>
-                                <button type="button" onclick="deleteApiKey('<?php echo htmlspecialchars($api_item['id']); ?>')" title="ลบ API Key นี้" class="w-8 h-8 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
+                                <button type="button" onclick="deleteApiKey('<?php echo htmlspecialchars($api_item['id']); ?>')" title="ลบ API Key นี้" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
                                     <i class="fa-regular fa-trash-can text-sm"></i>
                                 </button>
                             </div>
