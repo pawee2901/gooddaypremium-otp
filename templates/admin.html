@@ -875,15 +875,15 @@
                 btnGmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 btnHotmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 hostInput.value = "imap.gmail.com";
-                if (passContainer) passContainer.classList.remove('hidden');
-                if (hotmailNotice) hotmailNotice.classList.add('hidden');
+                if (passContainer) passContainer.style.setProperty('display', 'block', 'important');
+                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'none', 'important');
             } else {
                 btnHotmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 btnGmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 hostInput.value = "outlook.office365.com";
                 if (passInput) passInput.value = '';
-                if (passContainer) passContainer.classList.add('hidden');
-                if (hotmailNotice) hotmailNotice.classList.remove('hidden');
+                if (passContainer) passContainer.style.setProperty('display', 'none', 'important');
+                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'block', 'important');
             }
         }
 
