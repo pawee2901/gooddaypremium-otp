@@ -589,7 +589,7 @@
                 </button>
             </div>
 
-            <form id="emailForm" onsubmit="handleSaveEmail(event)" class="space-y-4">
+            <form id="emailForm" onsubmit="handleSaveEmail(event)" class="space-y-4" autocomplete="off">
                 <!-- เลือกประเภทผู้ให้บริการ -->
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ผู้ให้บริการอีเมล (Provider)</label>
@@ -606,6 +606,7 @@
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ที่อยู่อีเมล (Email Address)</label>
                     <input type="email" id="emailAddrInput" required placeholder="เช่น example@gmail.com หรือ hotmail.com" 
+                           autocomplete="off"
                            oninput="autoDetectAdminProvider(this.value)"
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
                 </div>
@@ -624,6 +625,7 @@
                 <div class="space-y-1.5" id="passInputContainer">
                     <label class="text-xs font-bold text-gray-700">App Password (รหัสผ่านแอป 16 หลัก)</label>
                     <input type="password" id="emailPassInput" placeholder="รหัสผ่าน App Password สำหรับ IMAP" 
+                           autocomplete="new-password"
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
                     <p class="text-[10px] text-gray-400">* Gmail ต้องสร้าง App Password ในบัญชี Google เพื่อล็อกอิน IMAP</p>
                     <div class="flex flex-wrap items-center gap-3 pt-1">
@@ -849,6 +851,11 @@
 
         // --- IMAP Email Handlers ---
         function openAddEmailModal() {
+            const form = document.getElementById('emailForm');
+            if (form) form.reset();
+            document.getElementById('emailAddrInput').value = '';
+            document.getElementById('emailPassInput').value = '';
+            selectProvider('gmail');
             document.getElementById('emailModal').classList.remove('hidden');
         }
         function closeEmailModal() {
@@ -861,6 +868,7 @@
             const btnHotmail = document.getElementById('provBtnHotmail');
             const hostInput = document.getElementById('emailHostInput');
             const passContainer = document.getElementById('passInputContainer');
+            const passInput = document.getElementById('emailPassInput');
             const hotmailNotice = document.getElementById('hotmailNoticeContainer');
 
             if (prov === 'gmail') {
@@ -873,6 +881,7 @@
                 btnHotmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 btnGmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 hostInput.value = "outlook.office365.com";
+                if (passInput) passInput.value = '';
                 if (passContainer) passContainer.classList.add('hidden');
                 if (hotmailNotice) hotmailNotice.classList.remove('hidden');
             }
@@ -889,7 +898,7 @@
         async function handleSaveEmail(event) {
             event.preventDefault();
             const email = document.getElementById('emailAddrInput').value.trim();
-            const password = document.getElementById('emailPassInput').value.trim();
+            const password = currentProvider === 'hotmail' ? '' : document.getElementById('emailPassInput').value.trim();
             const host = document.getElementById('emailHostInput').value.trim();
             const port = document.getElementById('emailPortInput').value.trim();
 
