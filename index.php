@@ -564,6 +564,9 @@ if (file_exists($config_path)) {
                             
                             // หยุดดึงข้อมูลสด
                             stopOTPPolling();
+                        } else if (data.success === false && data.message) {
+                            showError(data.message);
+                            stopOTPPolling();
                         }
                     }
                 } catch (e) {
