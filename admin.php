@@ -398,64 +398,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // --- Action: เพิ่ม Forwarding Map (Hotmail/Outlook → Gmail) ---
-    if ($action === 'add_forwarding_map') {
-        header('Content-Type: application/json');
-        $source = isset($_POST['source_email']) ? strtolower(trim($_POST['source_email'])) : '';
-        $target = isset($_POST['target_email']) ? strtolower(trim($_POST['target_email'])) : '';
-        $label  = isset($_POST['label']) ? trim($_POST['label']) : '';
-
-        if (empty($source) || empty($target)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'กรุณากรอกอีเมลต้นทางและปลายทาง']);
-            exit;
-        }
-
-        if (!filter_var($source, FILTER_VALIDATE_EMAIL) || !filter_var($target, FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'รูปแบบอีเมลไม่ถูกต้อง']);
-            exit;
-        }
-
-        if (!isset($config['forwarding_map']) || !is_array($config['forwarding_map'])) {
-            $config['forwarding_map'] = [];
-        }
-
-        // Check for duplicate source
-        foreach ($config['forwarding_map'] as $existing) {
-            if (($existing['source_email'] ?? '') === $source) {
-                echo json_encode(['success' => false, 'message' => "อีเมล $source มีการตั้งค่า Forwarding อยู่แล้ว"]);
-                exit;
-            }
-        }
-
-        $config['forwarding_map'][] = [
-            'id'           => 'fwd_' . time() . '_' . rand(100, 999),
-            'source_email' => $source,
-            'target_email' => $target,
-            'label'        => $label,
-        ];
-
-        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        echo json_encode(['success' => true, 'message' => 'เพิ่มการตั้งค่า Forwarding เรียบร้อยแล้ว', 'data' => $config['forwarding_map']]);
-        exit;
-    }
-
-    // --- Action: ลบ Forwarding Map ---
-    if ($action === 'delete_forwarding_map') {
-        header('Content-Type: application/json');
-        $id = isset($_POST['id']) ? trim($_POST['id']) : '';
-
-        if (!empty($id) && isset($config['forwarding_map']) && is_array($config['forwarding_map'])) {
-            $config['forwarding_map'] = array_values(array_filter($config['forwarding_map'], function($item) use ($id) {
-                return ($item['id'] ?? '') !== $id;
-            }));
-            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        }
-
-        echo json_encode(['success' => true, 'message' => 'ลบการตั้งค่า Forwarding เรียบร้อยแล้ว']);
-        exit;
-    }
 
     // --- Action: อัปโหลดโลโก้ร้าน ---
     if ($action === 'upload_logo') {
@@ -793,80 +735,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- FORWARDING MAP SECTION (ส่วนนี้อยู่ใน tabContentImap) -->
-        <!-- ============================================================ -->
-        <div id="tabContentFwd" class="space-y-5">
-            <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
 
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-blue-500 text-lg"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
-                            <h2 class="text-base font-extrabold text-gray-900">Forwarding Map (Hotmail/Outlook → Gmail)</h2>
-                        </div>
-                        <p class="text-xs text-gray-400">ระบุว่า Hotmail ไหน → ส่งต่อมายัง Gmail กลางไหน เพื่อให้ระบบดึง OTP ผ่าน Gmail แทน</p>
-                    </div>
-                    <button onclick="openAddForwardingModal()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98] self-start sm:self-auto">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>+ เพิ่ม Forwarding</span>
-                    </button>
-                </div>
-
-                <div class="bg-blue-50/70 border border-blue-200/60 rounded-2xl px-4 py-3 text-xs text-blue-800 flex items-start gap-2.5">
-                    <i class="fa-solid fa-circle-info text-blue-400 mt-0.5 flex-shrink-0"></i>
-                    <div class="space-y-0.5 leading-relaxed">
-                        <p class="font-bold">วิธีการทำงาน 3 ขั้นตอน:</p>
-                        <p>① ตั้งค่า Forwarding ใน Outlook ให้ส่งต่ออีเมลไปยัง Gmail → ② เพิ่ม Gmail นั้นในส่วน "บัญชีอีเมล IMAP" พร้อม App Password → ③ เพิ่มคู่ Hotmail↔Gmail ในตารางด้านล่าง</p>
-                        <p class="text-blue-600 font-semibold mt-1"><i class="fa-solid fa-bolt text-yellow-400"></i> เมื่อลูกค้าพิมพ์ Hotmail ระบบจะค้นหาใน Gmail ที่รับ Forward แทนครับ</p>
-                    </div>
-                </div>
-
-                <div class="space-y-3" id="forwardingMapList">
-                    <?php
-                    $fwd_map = isset($config['forwarding_map']) && is_array($config['forwarding_map']) ? $config['forwarding_map'] : [];
-                    if (empty($fwd_map)):
-                    ?>
-                    <div class="text-center py-8 text-gray-400 text-xs font-medium">
-                        ยังไม่มีการตั้งค่า Forwarding กดปุ่ม "+ เพิ่ม Forwarding" เพื่อเริ่มต้นครับ
-                    </div>
-                    <?php else: foreach ($fwd_map as $fwd): ?>
-                    <div class="bg-blue-50/40 border border-blue-200/50 rounded-2xl p-3.5 sm:p-4 flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs hover:border-blue-300 transition-all">
-                        <div class="flex items-center gap-3 min-w-0 w-full xs:w-auto">
-                            <div class="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 border border-blue-200 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 text-base">
-                                <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                            </div>
-                            <div class="min-w-0 flex-1 space-y-1.5">
-                                <?php if (!empty($fwd['label'])): ?>
-                                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wide"><?php echo htmlspecialchars($fwd['label']); ?></p>
-                                <?php endif; ?>
-                                <div class="flex flex-wrap items-center gap-1.5">
-                                    <span class="inline-flex items-center gap-1 bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                                        <i class="fa-brands fa-microsoft text-[9px]"></i>
-                                        <?php echo htmlspecialchars($fwd['source_email']); ?>
-                                    </span>
-                                    <i class="fa-solid fa-arrow-right text-gray-400 text-[10px]"></i>
-                                    <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                                        <i class="fa-brands fa-google text-[9px]"></i>
-                                        <?php echo htmlspecialchars($fwd['target_email']); ?>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-end w-full xs:w-auto border-t xs:border-t-0 pt-2 xs:pt-0 border-blue-100 flex-shrink-0">
-                            <button onclick="deleteForwardingMap('<?php echo htmlspecialchars($fwd['id']); ?>')"
-                                    title="ลบการตั้งค่านี้"
-                                    class="w-8 h-8 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all active:scale-95">
-                                <i class="fa-regular fa-trash-can text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <?php endforeach; endif; ?>
-                </div>
-
-            </div>
-        </div>
 
         <!-- ========================================== -->
         <!-- TAB 2 CONTENT: ตั้งค่าแอปพลิเคชัน (OTP Apps) -->
@@ -1240,76 +1109,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL: เพิ่ม Forwarding Map                 -->
-    <!-- ========================================== -->
-    <div id="forwardingModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/80">
-                <h3 class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-right-arrow-left text-blue-600"></i>
-                    <span>เพิ่มการตั้งค่า Forwarding</span>
-                </h3>
-                <button type="button" onclick="closeForwardingModal()" class="text-gray-400 hover:text-gray-700 w-8 h-8 rounded-full flex items-center justify-center text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <form id="forwardingForm" onsubmit="handleSaveForwarding(event)" class="p-4 sm:p-5 space-y-4">
-
-                <div class="bg-blue-50 border border-blue-200/60 rounded-xl px-3.5 py-3 text-xs text-blue-700 leading-relaxed">
-                    <p class="font-bold mb-0.5"><i class="fa-brands fa-microsoft mr-1"></i> Hotmail/Outlook (ต้นทาง)</p>
-                    <p>คืออีเมลที่ลูกค้าพิมพ์ในหน้าหลัก และได้ตั้งค่า Forwarding ใน Outlook แล้ว</p>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-gray-600 pl-0.5">อีเมลต้นทาง (Hotmail/Outlook)</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                            <i class="fa-brands fa-microsoft text-orange-500 text-xs"></i>
-                        </div>
-                        <input type="email" id="fwdSourceInput" required placeholder="user@hotmail.com / user@outlook.com"
-                               class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-center">
-                    <div class="flex items-center gap-2 text-gray-400 text-xs">
-                        <div class="h-px w-10 bg-gray-200"></div>
-                        <i class="fa-solid fa-arrow-down"></i>
-                        <span>ส่งต่อไปยัง</span>
-                        <i class="fa-solid fa-arrow-down"></i>
-                        <div class="h-px w-10 bg-gray-200"></div>
-                    </div>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-gray-600 pl-0.5">Gmail ปลายทาง (ที่รับ Forward)</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                            <i class="fa-brands fa-google text-red-500 text-xs"></i>
-                        </div>
-                        <input type="email" id="fwdTargetInput" required placeholder="gmail_ที่รับ_forward@gmail.com"
-                               class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <p class="text-[10px] text-gray-400 pl-0.5">* ต้องเพิ่ม Gmail นี้ในส่วน "บัญชีอีเมล IMAP" พร้อม App Password ด้วย</p>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-gray-600 pl-0.5">ชื่อกำกับ (ไม่บังคับ)</label>
-                    <input type="text" id="fwdLabelInput" placeholder="เช่น: บัญชี Hotmail ลูกค้า A"
-                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-
-                <div class="pt-2 flex items-center justify-end gap-2">
-                    <button type="button" onclick="closeForwardingModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl">ยกเลิก</button>
-                    <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm">
-                        <i class="fa-solid fa-plus mr-1"></i> เพิ่ม Forwarding
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
     <!-- MODAL GUIDE: คู่มือรูปภาพวิธีตั้งค่า -->
     <!-- ========================================== -->
     <div id="guideModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 md:p-6 overflow-y-auto">
@@ -1480,59 +1279,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             }
         }
 
-        // --- Forwarding Map Handlers ---
-        function openAddForwardingModal() {
-            document.getElementById('fwdSourceInput').value = '';
-            document.getElementById('fwdTargetInput').value = '';
-            document.getElementById('fwdLabelInput').value = '';
-            document.getElementById('forwardingModal').classList.remove('hidden');
-        }
-
-        function closeForwardingModal() {
-            document.getElementById('forwardingModal').classList.add('hidden');
-        }
-
-        async function handleSaveForwarding(event) {
-            event.preventDefault();
-            const source = document.getElementById('fwdSourceInput').value.trim();
-            const target = document.getElementById('fwdTargetInput').value.trim();
-            const label  = document.getElementById('fwdLabelInput').value.trim();
-
-            const formData = new FormData();
-            formData.append('source_email', source);
-            formData.append('target_email', target);
-            formData.append('label', label);
-
-            try {
-                const res = await fetch('admin.php?action=add_forwarding_map', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (data.success) {
-                    closeForwardingModal();
-                    showNotification('เพิ่มการตั้งค่า Forwarding เรียบร้อยแล้วค่ะ!');
-                    setTimeout(() => window.location.reload(), 800);
-                } else {
-                    alert(data.message || 'ไม่สามารถบันทึกการตั้งค่าได้');
-                }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-            }
-        }
-
-        async function deleteForwardingMap(id) {
-            if (!confirm('ยืนยันการลบการตั้งค่า Forwarding นี้?')) return;
-            const formData = new FormData();
-            formData.append('id', id);
-            try {
-                const res = await fetch('admin.php?action=delete_forwarding_map', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (data.success) {
-                    showNotification('ลบการตั้งค่า Forwarding เรียบร้อยแล้ว');
-                    setTimeout(() => window.location.reload(), 600);
-                }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการลบ');
-            }
-        }
+        
 
         // --- OTP Apps Handlers ---
         function openAddAppModal() {
