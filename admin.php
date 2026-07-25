@@ -1352,11 +1352,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     content.classList.add('hidden');
                 }
             });
-            // Forwarding section shows with IMAP tab
+            // ซ่อนระบบ Forwarding ไว้เพราะใช้ระบบสแกนอัตโนมัติแล้ว
             const fwdSection = document.getElementById('tabContentFwd');
             if (fwdSection) {
-                if (tabName === 'imap') fwdSection.classList.remove('hidden');
-                else fwdSection.classList.add('hidden');
+                fwdSection.classList.add('hidden');
             }
         }
 

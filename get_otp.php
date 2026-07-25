@@ -198,133 +198,8 @@ if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails']))
 }
 
 // =========================================================================
-// ตรวจสอบ Forwarding Map: ถ้าอีเมลของลูกค้า (Hotmail) มีการตั้งค่า Forward
-// → เปลี่ยนไปค้นหาใน Gmail กลางที่รับ Forward แทน
+// 3. จัดการการดึงข้อมูลตามประเภทของอีเมล (Maily vs IMAP Catch-All)
 // =========================================================================
-$forwarding_target = null;
-$forwarding_imap_creds = null;
-if (isset($config_data['forwarding_map']) && is_array($config_data['forwarding_map'])) {
-    foreach ($config_data['forwarding_map'] as $fwd) {
-        if (strtolower($fwd['source_email'] ?? '') === strtolower($email)) {
-            $forwarding_target = strtolower($fwd['target_email']);
-            // ค้นหา credentials ของ Gmail ปลายทางใน imap_emails
-            if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
-                foreach ($config_data['imap_emails'] as $imap_item) {
-                    if (strtolower($imap_item['email'] ?? '') === $forwarding_target && !empty($imap_item['password'])) {
-                        $forwarding_imap_creds = $imap_item;
-                        break;
-                    }
-                }
-            }
-            break;
-        }
-    }
-}
-
-// ถ้ามี forwarding map และมี credentials → ดึง OTP จาก Gmail IMAP โดยตรง
-if ($forwarding_target !== null) {
-    if ($forwarding_imap_creds === null) {
-        echo json_encode([
-            'success' => false,
-            'message' => "อีเมลนี้ถูกตั้งค่า Forwarding ไปยัง $forwarding_target แต่ยังไม่ได้เพิ่ม App Password ในระบบ (กรุณาเพิ่มในหน้าแอดมิน)"
-        ]);
-        exit;
-    }
-
-    // ดึงอีเมลผ่าน IMAP Gmail
-    $imap_host = $forwarding_imap_creds['host'] ?? 'imap.gmail.com';
-    $imap_port = intval($forwarding_imap_creds['port'] ?? 993);
-    $imap_user = $forwarding_imap_creds['email'];
-    $imap_pass = $forwarding_imap_creds['password'];
-
-    $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
-    $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
-
-    if (!$imap_conn) {
-        $imap_err = imap_last_error();
-        echo json_encode([
-            'success' => false,
-            'message' => "เชื่อมต่อ Gmail ($forwarding_target) ไม่ได้: ตรวจสอบ App Password อีกครั้ง"
-        ]);
-        exit;
-    }
-
-    // กำหนด keyword ค้นหาตามชื่อบริการ
-    $lower_app = strtolower($app_name);
-    if (strpos($lower_app, 'netflix') !== false) $search_kw = 'Netflix';
-    elseif (strpos($lower_app, 'disney') !== false) $search_kw = 'Disney';
-    elseif (strpos($lower_app, 'true') !== false) $search_kw = 'TrueID';
-    elseif (strpos($lower_app, 'prime') !== false || strpos($lower_app, 'amazon') !== false) $search_kw = 'Amazon';
-    else $search_kw = 'openai';
-
-    $search_results = @imap_search($imap_conn, 'TEXT "' . addslashes($search_kw) . '"', SE_UID);
-    if (!$search_results) {
-        // ลองค้นหาแบบ ALL แล้วกรองเอง
-        $search_results = @imap_search($imap_conn, 'ALL', SE_UID);
-    }
-
-    $matching_mails = [];
-    if ($search_results) {
-        rsort($search_results); // เรียงล่าสุดก่อน
-        $limit = min(5, count($search_results));
-        for ($i = 0; $i < $limit; $i++) {
-            $uid = $search_results[$i];
-            $header = @imap_rfc822_parse_headers(@imap_fetchheader($imap_conn, $uid, FT_UID));
-            $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
-            $from_obj = isset($header->from[0]) ? $header->from[0] : null;
-            $from_email = $from_obj ? ($from_obj->mailbox . '@' . $from_obj->host) : '';
-
-            // กรองตาม app keyword
-            if (!matches_app($from_email, $subject, $app_name)) continue;
-
-            // ดึง body
-            $body = @imap_fetchbody($imap_conn, $uid, '1', FT_UID);
-            if (empty($body)) $body = @imap_fetchbody($imap_conn, $uid, '1.1', FT_UID);
-
-            // Decode encoding
-            $struct = @imap_fetchstructure($imap_conn, $uid, FT_UID);
-            $encoding = isset($struct->parts[0]->encoding) ? $struct->parts[0]->encoding : ($struct->encoding ?? 0);
-            if ($encoding == 3) $body = base64_decode($body);
-            elseif ($encoding == 4) $body = quoted_printable_decode($body);
-
-            $date_header = isset($header->date) ? $header->date : '';
-            $date_ts = strtotime($date_header);
-            $thai_time = $date_ts ? date('d/m/', $date_ts) . (date('Y', $date_ts) + 543) . ' ' . date('H:i', $date_ts) . ' น.' : $date_header;
-
-            $otp_code = extract_otp_code($body) ?? '';
-            $ref_code  = extract_ref_code($body) ?? '';
-
-            $matching_mails[] = [
-                'subject'   => $subject ?: 'ไม่มีหัวข้อ',
-                'from'      => $from_email,
-                'time'      => $thai_time,
-                'otp'       => $otp_code,
-                'ref'       => $ref_code,
-                'html_body' => $body
-            ];
-
-            if (count($matching_mails) >= 1) break; // แสดงล่าสุดฉบับเดียว
-        }
-    }
-    @imap_close($imap_conn);
-
-    if (empty($matching_mails)) {
-        echo json_encode([
-            'success' => false,
-            'message' => "ไม่พบอีเมลยืนยันของ $app_name ใน Gmail ($forwarding_target) กรุณารอสักครู่แล้วลองใหม่ หรือตรวจสอบว่า Outlook ส่งต่อมายัง Gmail แล้ว"
-        ]);
-        exit;
-    }
-
-    echo json_encode([
-        'success'  => true,
-        'app_name' => $app_name,
-        'email'    => $email,
-        'emails'   => $matching_mails
-    ]);
-    exit;
-}
-
 $lower_email = strtolower($email);
 $is_maily_domain = false;
 $maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"];
@@ -336,10 +211,10 @@ foreach ($maily_domains as $d) {
     }
 }
 
-// -------------------------------------------------------------------------
-// ช่องทาง A: ดึงตรงจาก Maily Space API
-// -------------------------------------------------------------------------
 if ($is_maily_domain) {
+    // -------------------------------------------------------------------------
+    // ช่องทาง A: ดึงตรงจาก Maily Space API
+    // -------------------------------------------------------------------------
     $parts = explode('@', $email, 2);
     $account_name = strtolower(trim($parts[0]));
     $domain_id = str_replace('.', '', strtolower(trim($parts[1])));
@@ -406,7 +281,6 @@ if ($is_maily_domain) {
         if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name)) {
             $html_body = $mail['html'] ?? '';
             
-            // หากเนื้อหา html ว่างเปล่า ให้ดึงผ่านรายละเอียดจดหมาย (Detail API)
             if (empty($html_body) && !empty($mail['id'])) {
                 $mail_id = $mail['id'];
                 $detail_params = http_build_query([
@@ -449,7 +323,6 @@ if ($is_maily_domain) {
                 'html_body' => $html_body
             ];
             
-            // แสดงเฉพาะจดหมายเข้าล่าสุดฉบับเดียวเท่านั้น
             break;
         }
     }
@@ -472,84 +345,132 @@ if ($is_maily_domain) {
 
 } else {
     // -------------------------------------------------------------------------
-    // ช่องทาง B: ดึงจาก Cloud Run API ( Hotmail, Gmail ฯลฯ )
+    // ช่องทาง B: Centralized Catch-All (ดึงจาก Gmail หลักทั้งหมด)
     // -------------------------------------------------------------------------
-    $app_code = get_app_code($app_name);
-    $query_params = http_build_query([
-        "senderEmail" => trim($email),
-        "appCode" => $app_code
-    ]);
     
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "$cloud_run_url?$query_params");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_err = curl_error($ch);
-    curl_close($ch);
-    
-    if ($curl_err || $http_code !== 200) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'ระบบคลาวด์เชื่อมต่อขัดข้องชั่วคราว กรุณาตรวจสอบความถูกต้องของอีเมลหรือลองใหม่อีกครั้ง'
-        ]);
-        exit;
-    }
-    
-    $data = json_decode($response, true);
-    $emails = isset($data['emails']) ? $data['emails'] : [];
-    
-    if (empty($emails)) {
-        echo json_encode([
-            'success' => false,
-            'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดของ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP หรือตรวจสอบว่าได้ลงทะเบียนเมลนี้แล้ว)"
-        ]);
-        exit;
-    }
-    
-    $matching_mails = [];
-    foreach ($emails as $mail) {
-        $html_body = $mail['html'] ?? '';
-        
-        // ดึงเฉพาะเนื้อหา Table หลักหากพบเพื่อป้องกัน overflow หน้าเว็บ
-        if (!empty($html_body)) {
-            $table_idx = strpos($html_body, "<table");
-            if ($table_idx !== false) {
-                $html_body = substr($html_body, $table_idx);
+    $imap_accounts_to_check = [];
+    $direct_match_found = false;
+
+    // หาว่าลูกค้ามีเมลตรงกับในระบบไหม
+    if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+        foreach ($config_data['imap_emails'] as $imap_item) {
+            if (strtolower($imap_item['email'] ?? '') === $lower_email && !empty($imap_item['password'])) {
+                $imap_accounts_to_check[] = $imap_item;
+                $direct_match_found = true;
+                break;
             }
         }
-        
-        $otp_code = extract_otp_code($html_body) ?? '';
-        $ref_code = extract_ref_code($html_body) ?? '';
-        $time_formatted = parse_cloud_run_date_to_thai($mail['date'] ?? '');
-        
-        $matching_mails[] = [
-            'subject' => $mail['subject'] ?? 'ไม่มีหัวข้อ',
-            'from' => $mail['sender'] ?? "$app_name Security",
-            'time' => $time_formatted,
-            'otp' => $otp_code,
-            'ref' => $ref_code,
-            'html_body' => $html_body
-        ];
     }
-    
+
+    // ถ้าไม่มีเมลตรงๆ (เช่นเป็น Hotmail ของลูกค้า) ให้หาใน Gmail ทุกบัญชีในระบบ
+    if (!$direct_match_found && isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+        foreach ($config_data['imap_emails'] as $imap_item) {
+            if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
+                $imap_accounts_to_check[] = $imap_item;
+            }
+        }
+    }
+
+    if (empty($imap_accounts_to_check)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'ระบบยังไม่ได้ตั้งค่าบัญชีอีเมลกลางสำหรับดึงรหัสผ่าน (กรุณาให้แอดมินเพิ่มอีเมล IMAP)'
+        ]);
+        exit;
+    }
+
+    $matching_mails = [];
+
+    // วนลูปเช็คทีละบัญชี
+    foreach ($imap_accounts_to_check as $creds) {
+        $imap_host = $creds['host'] ?? 'imap.gmail.com';
+        $imap_port = intval($creds['port'] ?? 993);
+        $imap_user = $creds['email'];
+        $imap_pass = $creds['password'];
+
+        $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
+        $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
+
+        if (!$imap_conn) {
+            continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
+        }
+
+        // ดึงจดหมายล่าสุด 20 ฉบับ
+        $search_results = @imap_search($imap_conn, 'ALL', SE_UID);
+        
+        if ($search_results) {
+            rsort($search_results); // เรียงล่าสุดก่อน
+            $limit = min(20, count($search_results));
+            
+            for ($i = 0; $i < $limit; $i++) {
+                $uid = $search_results[$i];
+                $header = @imap_rfc822_parse_headers(@imap_fetchheader($imap_conn, $uid, FT_UID));
+                $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
+                $from_obj = isset($header->from[0]) ? $header->from[0] : null;
+                $from_email = $from_obj ? ($from_obj->mailbox . '@' . $from_obj->host) : '';
+                
+                $to_obj = isset($header->to[0]) ? $header->to[0] : null;
+                $to_email = $to_obj ? ($to_obj->mailbox . '@' . $to_obj->host) : '';
+
+                // กรองแอป (Netflix, Disney etc)
+                if (!matches_app($from_email, $subject, $app_name)) continue;
+
+                // ดึง body
+                $body = @imap_fetchbody($imap_conn, $uid, '1', FT_UID);
+                if (empty($body)) $body = @imap_fetchbody($imap_conn, $uid, '1.1', FT_UID);
+
+                // Decode
+                $struct = @imap_fetchstructure($imap_conn, $uid, FT_UID);
+                $encoding = isset($struct->parts[0]->encoding) ? $struct->parts[0]->encoding : ($struct->encoding ?? 0);
+                if ($encoding == 3) $body = base64_decode($body);
+                elseif ($encoding == 4) $body = quoted_printable_decode($body);
+
+                $lower_body = strtolower($body);
+                
+                // ตรวจสอบว่าเป็นของอีเมลลูกค้านี้จริงๆ (ถ้าตรงเป๊ะๆ หรือมีการ Forward มาแล้วมีชื่อเมลอยู่ในเนื้อหา)
+                $is_target = false;
+                if (strtolower($to_email) === $lower_email) {
+                    $is_target = true;
+                } else if (strpos($lower_body, $lower_email) !== false) {
+                    $is_target = true;
+                }
+
+                if ($is_target) {
+                    $date_header = isset($header->date) ? $header->date : '';
+                    $date_ts = strtotime($date_header);
+                    $thai_time = $date_ts ? date('d/m/', $date_ts) . (date('Y', $date_ts) + 543) . ' ' . date('H:i', $date_ts) . ' น.' : $date_header;
+
+                    $otp_code = extract_otp_code($body) ?? '';
+                    $ref_code  = extract_ref_code($body) ?? '';
+
+                    $matching_mails[] = [
+                        'subject'   => $subject ?: 'ไม่มีหัวข้อ',
+                        'from'      => $from_email,
+                        'time'      => $thai_time,
+                        'otp'       => $otp_code,
+                        'ref'       => $ref_code,
+                        'html_body' => $body
+                    ];
+                    break 2; // เจอแล้ว หยุดหา
+                }
+            }
+        }
+        @imap_close($imap_conn);
+    }
+
     if (empty($matching_mails)) {
         echo json_encode([
             'success' => false,
-            'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดสำหรับ $app_name"
+            'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดของ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง หรือตรวจสอบการตั้งค่า Forwarding)"
         ]);
         exit;
     }
-    
+
     echo json_encode([
-        'success' => true,
+        'success'  => true,
         'app_name' => $app_name,
-        'email' => $email,
-        'emails' => $matching_mails
+        'email'    => $email,
+        'emails'   => $matching_mails
     ]);
     exit;
 }
