@@ -160,23 +160,22 @@ def parse_cloud_run_date_to_thai(date_str):
     return datetime.now().strftime('%d/%m/%Y %H:%M น.')
 
 # ฟังก์ชันตรวจสอบคัดกรองหัวจดหมายและผู้ส่งให้ตรงตามระบบแอปพลิเคชันที่เลือก
-def matches_app(mail_from, mail_subject, app_name, body=""):
+def matches_app(mail_from, mail_subject, app_name):
     lower_from = mail_from.lower() if mail_from else ""
     lower_sub = mail_subject.lower() if mail_subject else ""
     lower_app = app_name.lower()
-    lower_body = body.lower() if body else ""
     
     if "netflix" in lower_app:
-        return "netflix" in lower_from or "netflix" in lower_sub or "netflix" in lower_body
+        return "netflix" in lower_from or "netflix" in lower_sub
     elif "disney" in lower_app:
-        return "disney" in lower_from or "disney" in lower_sub or "disney" in lower_body
+        return "disney" in lower_from or "disney" in lower_sub
     elif "true" in lower_app:
-        return "true" in lower_from or "true" in lower_sub or "true" in lower_body
-    elif "chat" in lower_app or "openai" in lower_app or "gpt" in lower_app:
-        return "openai" in lower_from or "openai" in lower_sub or "chatgpt" in lower_from or "chatgpt" in lower_sub or "openai" in lower_body or "chatgpt" in lower_body
+        return "true" in lower_from or "true" in lower_sub
+    elif "chat" in lower_app or "openai" in lower_app:
+        return "openai" in lower_from or "openai" in lower_sub or "chatgpt" in lower_from or "chatgpt" in lower_sub
     elif "prime" in lower_app or "amazon" in lower_app:
-        return "prime" in lower_from or "prime" in lower_sub or "amazon" in lower_from or "amazon" in lower_sub or "prime" in lower_body or "amazon" in lower_body
-    return lower_app in lower_from or lower_app in lower_sub or lower_app in lower_body
+        return "prime" in lower_from or "prime" in lower_sub or "amazon" in lower_from or "amazon" in lower_sub
+    return False
 
 # ฟังก์ชันถอดตัวเลข OTP ออกมาอย่างแม่นยำจาก HTML Body ของจดหมายจริง
 def extract_otp_code(html_body):
@@ -410,7 +409,7 @@ def get_otp():
 
         # --- ลองดึงจาก Cloud Run ก่อน ---
         try:
-            response = requests.get(CLOUD_RUN_URL, params=params, timeout=2, verify=False)
+            response = requests.get(CLOUD_RUN_URL, params=params, timeout=10, verify=False)
 
             if response.status_code == 200:
                 api_data = response.json()
@@ -448,15 +447,15 @@ def get_otp():
                         try:
                             M = imaplib.IMAP4_SSL('imap.gmail.com', 993)
                             M.login(account['user'], account['pass'])
-                            # เลือกโฟลเดอร์ INBOX ก่อน (เร็วกว่า All Mail)
-                            status, _ = M.select('INBOX', readonly=True)
+                            # เลือกโฟลเดอร์ "All Mail" ก่อน ถ้าไม่ได้ให้ใช้ INBOX
+                            status, _ = M.select('[Gmail]/All Mail', readonly=True)
                             if status != 'OK':
-                                M.select('[Gmail]/All Mail', readonly=True)
+                                M.select('INBOX', readonly=True)
 
-                            # ดึง 15 อีเมลล่าสุด
+                            # ดึง 30 อีเมลล่าสุด
                             typ, data = M.search(None, 'ALL')
                             all_ids = data[0].split()
-                            latest_ids = all_ids[-15:] if len(all_ids) >= 15 else all_ids
+                            latest_ids = all_ids[-30:] if len(all_ids) >= 30 else all_ids
                             latest_ids = list(reversed(latest_ids))  # เรียงใหม่สุดก่อน
 
                             found_in_account = False
@@ -515,7 +514,7 @@ def get_otp():
                                         continue
 
                                     # ตรวจว่าตรงกับ app_name หรือไม่
-                                    if not matches_app(sender, subject, app_name, full_text):
+                                    if not matches_app(sender, subject, app_name):
                                         continue
 
                                     # แยก table จาก html_body

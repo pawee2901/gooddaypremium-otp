@@ -72,24 +72,23 @@ function get_app_code($name) {
 }
 
 // ฟังก์ชันกรองหัวข้อผู้ส่งให้ตรงตามบริการหลัก
-function matches_app($from, $subject, $name, $body = '') {
+function matches_app($from, $subject, $name) {
     $lower_from = strtolower($from);
     $lower_sub = strtolower($subject);
     $lower_app = strtolower($name);
-    $lower_body = strtolower($body);
     
     if (strpos($lower_app, 'netflix') !== false) {
-        return (strpos($lower_from, 'netflix') !== false || strpos($lower_sub, 'netflix') !== false || strpos($lower_body, 'netflix') !== false);
+        return (strpos($lower_from, 'netflix') !== false || strpos($lower_sub, 'netflix') !== false);
     } elseif (strpos($lower_app, 'disney') !== false) {
-        return (strpos($lower_from, 'disney') !== false || strpos($lower_sub, 'disney') !== false || strpos($lower_body, 'disney') !== false);
+        return (strpos($lower_from, 'disney') !== false || strpos($lower_sub, 'disney') !== false);
     } elseif (strpos($lower_app, 'true') !== false) {
-        return (strpos($lower_from, 'true') !== false || strpos($lower_sub, 'true') !== false || strpos($lower_body, 'true') !== false);
-    } elseif (strpos($lower_app, 'chat') !== false || strpos($lower_app, 'openai') !== false || strpos($lower_app, 'gpt') !== false) {
-        return (strpos($lower_from, 'openai') !== false || strpos($lower_sub, 'openai') !== false || strpos($lower_from, 'chatgpt') !== false || strpos($lower_sub, 'chatgpt') !== false || strpos($lower_body, 'openai') !== false || strpos($lower_body, 'chatgpt') !== false);
+        return (strpos($lower_from, 'true') !== false || strpos($lower_sub, 'true') !== false);
+    } elseif (strpos($lower_app, 'chat') !== false || strpos($lower_app, 'openai') !== false) {
+        return (strpos($lower_from, 'openai') !== false || strpos($lower_sub, 'openai') !== false || strpos($lower_from, 'chatgpt') !== false || strpos($lower_sub, 'chatgpt') !== false);
     } elseif (strpos($lower_app, 'prime') !== false || strpos($lower_app, 'amazon') !== false) {
-        return (strpos($lower_from, 'prime') !== false || strpos($lower_sub, 'prime') !== false || strpos($lower_from, 'amazon') !== false || strpos($lower_sub, 'amazon') !== false || strpos($lower_body, 'prime') !== false || strpos($lower_body, 'amazon') !== false);
+        return (strpos($lower_from, 'prime') !== false || strpos($lower_sub, 'prime') !== false || strpos($lower_from, 'amazon') !== false || strpos($lower_sub, 'amazon') !== false);
     }
-    return (strpos($lower_from, $lower_app) !== false || strpos($lower_sub, $lower_app) !== false || strpos($lower_body, $lower_app) !== false);
+    return false;
 }
 
 // ฟังก์ชันแปลงรูปแบบเวลา UTC จาก Maily Space เป็นเวลาไทยท้องถิ่น (GMT+07:00)
@@ -363,41 +362,15 @@ if ($is_maily_domain) {
         }
     }
 
-    // ถ้าไม่มีเมลตรงๆ (เช่นเป็น Hotmail ของลูกค้า) ให้หาใน Gmail กลางทั้งหมด
+    // ถ้าไม่มีเมลตรงๆ (เช่นเป็น Hotmail ของลูกค้า) ให้หาใน Gmail ทุกบัญชีในระบบ
     if (!$direct_match_found) {
-        // 1. หาจาก gmail_central_accounts ใน config.json
-        if (isset($config_data['gmail_central_accounts']) && is_array($config_data['gmail_central_accounts'])) {
-            foreach ($config_data['gmail_central_accounts'] as $gacc) {
-                if (!empty($gacc['user']) && !empty($gacc['pass'])) {
-                    $imap_accounts_to_check[] = [
-                        'email' => $gacc['user'],
-                        'password' => $gacc['pass'],
-                        'host' => 'imap.gmail.com',
-                        'port' => 993
-                    ];
-                }
-            }
-        }
-
-        // 2. หาจาก imap_emails ที่เป็น gmail และมี password
         if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
             foreach ($config_data['imap_emails'] as $imap_item) {
                 if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
-                    $already_in = false;
-                    foreach ($imap_accounts_to_check as $chk) {
-                        if (strtolower($chk['email'] ?? '') === strtolower($imap_item['email'] ?? '')) {
-                            $already_in = true;
-                            break;
-                        }
-                    }
-                    if (!$already_in) {
-                        $imap_accounts_to_check[] = $imap_item;
-                    }
+                    $imap_accounts_to_check[] = $imap_item;
                 }
             }
         }
-
-        // 3. ถ้ายังไม่มี ให้ใช้ค่า default Gmail Central ทั้งหมด
         if (empty($imap_accounts_to_check)) {
             $imap_accounts_to_check = [
                 ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
@@ -416,129 +389,81 @@ if ($is_maily_domain) {
 
     $matching_mails = [];
 
-    // 0. ลองดึงผ่าน Cloud Run API ก่อน (กำหนด timeout ให้เร็ว 2 วินาที)
-    $app_code = get_app_code($app_name);
-    $cr_url = $cloud_run_url . '?email=' . urlencode($email) . '&app=' . urlencode($app_code);
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $cr_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    $cr_resp = curl_exec($ch);
-    $cr_http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    // วนลูปเช็คทีละบัญชี
+    foreach ($imap_accounts_to_check as $creds) {
+        $imap_host = $creds['host'] ?? 'imap.gmail.com';
+        $imap_port = intval($creds['port'] ?? 993);
+        $imap_user = $creds['email'];
+        $imap_pass = $creds['password'];
 
-    if ($cr_http === 200 && !empty($cr_resp)) {
-        $cr_json = json_decode($cr_resp, true);
-        if (isset($cr_json['emails']) && is_array($cr_json['emails']) && !empty($cr_json['emails'])) {
-            foreach ($cr_json['emails'] as $mail) {
-                $html_body = $mail['html'] ?? '';
-                if (!empty($html_body)) {
-                    $table_idx = strpos($html_body, '<table');
-                    if ($table_idx !== false) {
-                        $html_body = substr($html_body, $table_idx);
-                    }
-                }
-                $otp_code = extract_otp_code($html_body) ?? '';
-                $ref_code = extract_ref_code($html_body) ?? '';
-                $formatted_time = parse_cloud_run_date_to_thai($mail['date'] ?? '');
+        $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
+        $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
 
-                $matching_mails[] = [
-                    'subject'   => $mail['subject'] ?? 'ไม่มีหัวข้อ',
-                    'from'      => $mail['sender'] ?? "$app_name Security",
-                    'time'      => $formatted_time,
-                    'otp'       => $otp_code,
-                    'ref'       => $ref_code,
-                    'html_body' => $html_body
-                ];
-            }
+        if (!$imap_conn) {
+            continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
         }
-    }
 
-    // 1. ถ้า Cloud Run ไม่พบบทความ ให้ค้นหาใน IMAP ของ Gmail กลาง (ความเร็วสูง)
-    if (empty($matching_mails)) {
-        foreach ($imap_accounts_to_check as $creds) {
-            $imap_host = $creds['host'] ?? 'imap.gmail.com';
-            $imap_port = intval($creds['port'] ?? 993);
-            $imap_user = $creds['email'];
-            $imap_pass = $creds['password'];
-
-            // ลองเปิด INBOX ก่อน (เร็วกว่า [Gmail]/All Mail มาก)
-            $mb_inbox = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
-            $mb_all   = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}[Gmail]/All Mail";
+        // ดึงจดหมายล่าสุด 20 ฉบับ
+        $search_results = @imap_search($imap_conn, 'ALL', SE_UID);
+        
+        if ($search_results) {
+            rsort($search_results); // เรียงล่าสุดก่อน
+            $limit = min(20, count($search_results));
             
-            $imap_conn = @imap_open($mb_inbox, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
-            if (!$imap_conn) {
-                $imap_conn = @imap_open($mb_all, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
-            }
+            for ($i = 0; $i < $limit; $i++) {
+                $uid = $search_results[$i];
+                $header = @imap_rfc822_parse_headers(@imap_fetchheader($imap_conn, $uid, FT_UID));
+                $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
+                $from_obj = isset($header->from[0]) ? $header->from[0] : null;
+                $from_email = $from_obj ? ($from_obj->mailbox . '@' . $from_obj->host) : '';
+                
+                $to_obj = isset($header->to[0]) ? $header->to[0] : null;
+                $to_email = $to_obj ? ($to_obj->mailbox . '@' . $to_obj->host) : '';
 
-            if (!$imap_conn) {
-                continue;
-            }
+                // กรองแอป (Netflix, Disney etc)
+                if (!matches_app($from_email, $subject, $app_name)) continue;
 
-            // ใช้ Sequence Number ดึง 15 ฉบับล่าสุดแบบ Instant (ไม่ต้องพึ่ง imap_search ที่ช้า)
-            $check = @imap_check($imap_conn);
-            $nmsgs = $check ? $check->Nmsgs : 0;
-            
-            if ($nmsgs > 0) {
-                $start_msg = max(1, $nmsgs - 15);
-                for ($msgno = $nmsgs; $msgno >= $start_msg; $msgno--) {
-                    $header = @imap_headerinfo($imap_conn, $msgno);
-                    if (!$header) continue;
+                // ดึง body
+                $body = @imap_fetchbody($imap_conn, $uid, '1', FT_UID);
+                if (empty($body)) $body = @imap_fetchbody($imap_conn, $uid, '1.1', FT_UID);
 
-                    $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
-                    $from_obj = isset($header->from[0]) ? $header->from[0] : null;
-                    $from_email = $from_obj ? ($from_obj->mailbox . '@' . $from_obj->host) : '';
-                    
-                    $to_obj = isset($header->to[0]) ? $header->to[0] : null;
-                    $to_email = $to_obj ? ($to_obj->mailbox . '@' . $to_obj->host) : '';
+                // Decode
+                $struct = @imap_fetchstructure($imap_conn, $uid, FT_UID);
+                $encoding = isset($struct->parts[0]->encoding) ? $struct->parts[0]->encoding : ($struct->encoding ?? 0);
+                if ($encoding == 3) $body = base64_decode($body);
+                elseif ($encoding == 4) $body = quoted_printable_decode($body);
 
-                    // ดึงเฉพาะ body ทั้งฉบับในครั้งเดียว (Fast Path)
-                    $b_raw = @imap_body($imap_conn, $msgno);
-                    if (empty($b_raw)) {
-                        $b_raw = @imap_fetchbody($imap_conn, $msgno, "1");
-                    }
+                $lower_body = strtolower($body);
+                
+                // ตรวจสอบว่าเป็นของอีเมลลูกค้านี้จริงๆ (ถ้าตรงเป๊ะๆ หรือมีการ Forward มาแล้วมีชื่อเมลอยู่ในเนื้อหา)
+                $is_target = false;
+                if (strtolower($to_email) === $lower_email) {
+                    $is_target = true;
+                } else if (strpos($lower_body, $lower_email) !== false) {
+                    $is_target = true;
+                }
 
-                    $body_decoded = $b_raw;
-                    if (strpos($b_raw, 'Content-Transfer-Encoding: base64') !== false) {
-                        $b64_parts = explode("\r\n\r\n", $b_raw, 2);
-                        if (count($b64_parts) > 1) {
-                            $body_decoded .= "\n" . base64_decode(preg_replace('/\s+/', '', $b64_parts[1]));
-                        }
-                    }
-                    if (strpos($b_raw, 'quoted-printable') !== false) {
-                        $body_decoded .= "\n" . quoted_printable_decode($b_raw);
-                    }
-
-                    $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body_decoded);
-
-                    // ตรวจสอบว่าเกี่ยวข้องกับ target email ของลูกค้าหรือไม่
-                    $is_target = (strtolower($to_email) === $lower_email || strpos($full_text, $lower_email) !== false);
-                    if (!$is_target) continue;
-
-                    // ตรวจสอบว่าตรงกับแอปที่ลูกค้าเลือกหรือไม่
-                    if (!matches_app($from_email, $subject, $app_name, $full_text)) continue;
-
+                if ($is_target) {
                     $date_header = isset($header->date) ? $header->date : '';
                     $date_ts = strtotime($date_header);
                     $thai_time = $date_ts ? date('d/m/', $date_ts) . (date('Y', $date_ts) + 543) . ' ' . date('H:i', $date_ts) . ' น.' : $date_header;
 
-                    $otp_code = extract_otp_code($body_decoded) ?? '';
-                    $ref_code  = extract_ref_code($body_decoded) ?? '';
+                    $otp_code = extract_otp_code($body) ?? '';
+                    $ref_code  = extract_ref_code($body) ?? '';
 
                     $matching_mails[] = [
                         'subject'   => $subject ?: 'ไม่มีหัวข้อ',
-                        'from'      => $from_email ?: "$app_name Security",
+                        'from'      => $from_email,
                         'time'      => $thai_time,
                         'otp'       => $otp_code,
                         'ref'       => $ref_code,
-                        'html_body' => $body_decoded
+                        'html_body' => $body
                     ];
-                    break 2; // เจอแล้ว หยุดหาทันที
+                    break 2; // เจอแล้ว หยุดหา
                 }
             }
-            @imap_close($imap_conn);
         }
+        @imap_close($imap_conn);
     }
 
     if (empty($matching_mails)) {
