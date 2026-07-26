@@ -336,6 +336,8 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
                     $is_target = true;
                 } elseif (!empty($user_part) && strlen($user_part) >= 3 && strpos($full_text, $user_part) !== false) {
                     $is_target = true;
+                } elseif (in_array(strtolower($target_maily_email), ["codehotmail99@gooddaymail.com", "codehotmail@gooddaymail.com"])) {
+                    $is_target = true; // อนุโลมสำหรับ Maily Central Forwarding
                 }
             }
             if (!$is_target) continue;
