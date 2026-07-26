@@ -37,6 +37,16 @@
             "bg_color": "#f0f7ff",
             "border_color": "#d6e9ff",
             "active": true
+        },
+        {
+            "id": "app_1785052253",
+            "name": "True Now",
+            "code": "TN",
+            "logo_path": "/static/app_logo_1785052253_293.jpg",
+            "keywords": "true",
+            "bg_color": "#ffe8fe",
+            "border_color": "#d6e9ff",
+            "active": true
         }
     ],
     "imap_emails": [
@@ -87,6 +97,36 @@
             "host": "api.maily.space",
             "port": 443,
             "password": "",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785059909",
+            "email": "cennikhim98@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "kxfo ejye ltvx hcyp",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785060569",
+            "email": "hdhjeje4675@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "dlhj fltu khyg qgan",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785060895",
+            "email": "xachitiy@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "myvy ipkn dbpj slhd",
             "app_id": "all",
             "active": true
         }

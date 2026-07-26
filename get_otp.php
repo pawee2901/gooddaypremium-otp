@@ -175,15 +175,81 @@ function extract_otp_code($html_body) {
 // ฟังก์ชันดึงรหัสอ้างอิง (Reference Code) จาก HTML Body
 function extract_ref_code($html_body) {
     if (empty($html_body)) return '';
-    
+
     // ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อน
     $clean_html = preg_replace('/<(style|script)\b[^>]*>(.*?)<\/\1>/is', '', $html_body);
     $plain_text = strip_tags($clean_html);
-    
+
     if (preg_match('/(?:รหัสอ้างอิง|อ้างอิง|Ref|Reference)\s*(?:คือ|:|\s)\s*([A-Za-z0-9]{4,10})/ui', $plain_text, $matches)) {
         return $matches[1];
     }
     return '';
+}
+
+// ฟังก์ชันถอดรหัส Content-Transfer-Encoding ของแต่ละส่วน MIME (3=BASE64, 4=QUOTED-PRINTABLE)
+function decode_mime_part_data($data, $encoding) {
+    switch ((int)$encoding) {
+        case 3:
+            return base64_decode($data);
+        case 4:
+            return quoted_printable_decode($data);
+        default:
+            return $data;
+    }
+}
+
+// ฟังก์ชันดึงค่า charset จากพารามิเตอร์ของโครงสร้าง MIME part
+function get_mime_part_charset($struct_part) {
+    if (!empty($struct_part->parameters)) {
+        foreach ($struct_part->parameters as $param) {
+            if (strtolower($param->attribute) === 'charset') {
+                return $param->value;
+            }
+        }
+    }
+    return 'UTF-8';
+}
+
+// ฟังก์ชันแกะโครงสร้าง MIME จริงของอีเมล (รองรับ multipart) เพื่อดึงเนื้อหา HTML/Plain ที่ถอดรหัสแล้ว
+// (แก้ปัญหาเดิมที่ imap_body() คืนค่า MIME source ดิบๆ ที่ยังไม่ได้ decode มาแสดงตรงๆ)
+function imap_extract_body($imap_conn, $msgno) {
+    $structure = @imap_fetchstructure($imap_conn, $msgno);
+    $result = ['html' => '', 'plain' => ''];
+    if (!$structure) return $result;
+
+    $collect = function($part, $part_num) use (&$collect, $imap_conn, $msgno, &$result) {
+        if (!empty($part->parts) && is_array($part->parts)) {
+            foreach ($part->parts as $idx => $sub_part) {
+                $sub_num = ($part_num === '') ? (string)($idx + 1) : $part_num . '.' . ($idx + 1);
+                $collect($sub_part, $sub_num);
+            }
+            return;
+        }
+
+        // สนใจเฉพาะส่วนที่เป็น TEXT (type 0 ตามมาตรฐาน IMAP)
+        if ($part->type != 0) return;
+
+        $raw = ($part_num === '') ? @imap_body($imap_conn, $msgno) : @imap_fetchbody($imap_conn, $msgno, $part_num);
+        if ($raw === false || $raw === null || $raw === '') return;
+
+        $raw = decode_mime_part_data($raw, $part->encoding ?? 0);
+
+        $charset = get_mime_part_charset($part);
+        if ($charset && strtoupper($charset) !== 'UTF-8') {
+            $converted = @iconv($charset, 'UTF-8//IGNORE', $raw);
+            if ($converted !== false) $raw = $converted;
+        }
+
+        $subtype = strtolower($part->subtype ?? '');
+        if ($subtype === 'html') {
+            $result['html'] .= $raw;
+        } elseif ($subtype === 'plain') {
+            $result['plain'] .= $raw;
+        }
+    };
+
+    $collect($structure, '');
+    return $result;
 }
 
 if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
@@ -387,9 +453,67 @@ if ($is_maily_domain) {
 }
 
 // -------------------------------------------------------------------------
-// ช่องทาง B: Centralized Catch-All (ดึงจาก Gmail หลักทั้งหมด)
+// ช่องทาง B1: Cloud Run API ของลูกค้า (RDCW) — ลองก่อนเสมอเพราะเร็วกว่าการไล่สแกน IMAP มาก
 // -------------------------------------------------------------------------
-    
+$cloud_run_found = [];
+$app_code = get_app_code($app_name);
+$cr_query = http_build_query([
+    "senderEmail" => $email,
+    "appCode" => $app_code
+]);
+
+$ch_cr = curl_init();
+curl_setopt($ch_cr, CURLOPT_URL, "$cloud_run_url?$cr_query");
+curl_setopt($ch_cr, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch_cr, CURLOPT_TIMEOUT, 10);
+curl_setopt($ch_cr, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch_cr, CURLOPT_SSL_VERIFYHOST, false);
+$cr_response = @curl_exec($ch_cr);
+$cr_http_code = curl_getinfo($ch_cr, CURLINFO_HTTP_CODE);
+curl_close($ch_cr);
+
+if ($cr_http_code === 200 && $cr_response) {
+    $cr_data = json_decode($cr_response, true);
+    $cr_emails = (isset($cr_data['emails']) && is_array($cr_data['emails'])) ? $cr_data['emails'] : [];
+
+    foreach ($cr_emails as $mail) {
+        $cr_html_body = $mail['html'] ?? '';
+        if ($cr_html_body) {
+            $table_idx = strpos($cr_html_body, '<table');
+            if ($table_idx !== false) {
+                $cr_html_body = substr($cr_html_body, $table_idx);
+            }
+        }
+
+        $otp_code = extract_otp_code($cr_html_body) ?? '';
+        $ref_code = extract_ref_code($cr_html_body) ?? '';
+        $formatted_time = parse_cloud_run_date_to_thai($mail['date'] ?? '');
+
+        $cloud_run_found[] = [
+            'subject'   => $mail['subject'] ?? 'ไม่มีหัวข้อ',
+            'from'      => $mail['sender'] ?? ($app_name . ' Security'),
+            'time'      => $formatted_time,
+            'otp'       => $otp_code,
+            'ref'       => $ref_code,
+            'html_body' => $cr_html_body
+        ];
+    }
+}
+
+if (!empty($cloud_run_found)) {
+    echo json_encode([
+        'success'  => true,
+        'app_name' => $app_name,
+        'email'    => $email,
+        'emails'   => $cloud_run_found
+    ]);
+    exit;
+}
+
+// -------------------------------------------------------------------------
+// ช่องทาง B2: Centralized Catch-All (ดึงจาก Gmail หลักทั้งหมด) — Fallback หาก Cloud Run ไม่พบ
+// -------------------------------------------------------------------------
+
     $imap_accounts_to_check = [];
     $direct_match_found = false;
 
@@ -471,11 +595,10 @@ if ($is_maily_domain) {
                     continue;
                 }
 
-                // ดึง body เฉพาะฉบับที่เวลาผ่านการกรอง
-                $body = @imap_body($imap_conn, $msgno);
-                if (empty($body)) {
-                    $body = @imap_fetchbody($imap_conn, $msgno, '1');
-                }
+                // ดึง body เฉพาะฉบับที่เวลาผ่านการกรอง (แกะโครงสร้าง MIME จริงเพื่อให้ได้ HTML/Plain ที่ decode แล้ว
+                // ไม่ใช่ MIME source ดิบที่ยังไม่ถอดรหัส base64/quoted-printable)
+                $mail_content = imap_extract_body($imap_conn, $msgno);
+                $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
 
                 $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
 
@@ -486,7 +609,10 @@ if ($is_maily_domain) {
                 // กรองแอป (Netflix, Disney, True, OpenAI/ChatGPT etc)
                 if (!matches_app($from_email, $subject, $app_name, $full_text)) continue;
 
-                $thai_time = date('d/m/', $udate) . (date('Y', $udate) + 543) . ' ' . date('H:i', $udate) . ' น.';
+                // แปลงเป็นเวลาไทย (Asia/Bangkok) อย่างชัดเจน แทนการพึ่ง timezone เริ่มต้นของเซิร์ฟเวอร์ (มักตั้งเป็น UTC ทำให้เวลาที่แสดงคลาดเคลื่อน 7 ชั่วโมง)
+                $dt_thai = new DateTime('@' . $udate);
+                $dt_thai->setTimezone(new DateTimeZone('Asia/Bangkok'));
+                $thai_time = $dt_thai->format('d/m/') . ((int)$dt_thai->format('Y') + 543) . ' ' . $dt_thai->format('H:i') . ' น.';
 
                 $otp_code = extract_otp_code($body) ?? '';
                 $ref_code  = extract_ref_code($body) ?? '';
