@@ -79,7 +79,20 @@
             "password": "oirv aumf fkla lvmr",
             "app_id": "all",
             "active": true
+        },
+        {
+            "id": "email_codehotmail99",
+            "email": "codehotmail99@gooddaymail.com",
+            "provider": "maily",
+            "host": "api.maily.space",
+            "port": 443,
+            "password": "",
+            "app_id": "all",
+            "active": true
         }
+    ],
+    "maily_central_accounts": [
+        "codehotmail99@gooddaymail.com"
     ],
     "gmail_central_accounts": [
         {

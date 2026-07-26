@@ -199,11 +199,11 @@ if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails']))
 }
 
 // =========================================================================
-// 3. จัดการการดึงข้อมูลตามประเภทของอีเมล (Maily vs IMAP Catch-All)
+// 3. จัดการการดึงข้อมูลตามประเภทของอีเมล (Maily Space API & Central Accounts)
 // =========================================================================
 $lower_email = strtolower($email);
-$is_maily_domain = false;
 $maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"];
+$is_maily_domain = false;
 
 foreach ($maily_domains as $d) {
     if (strpos($lower_email, $d) !== false) {
@@ -212,20 +212,41 @@ foreach ($maily_domains as $d) {
     }
 }
 
-if (!$is_maily_domain && isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
-    foreach ($config_data['imap_emails'] as $item) {
-        if (strtolower($item['email'] ?? '') === $lower_email && ($item['provider'] ?? '') === 'maily') {
-            $is_maily_domain = true;
-            break;
+// สร้างรายการบัญชี Maily Space ที่ต้องสืบค้น
+$maily_accounts_to_check = [];
+
+if ($is_maily_domain) {
+    $maily_accounts_to_check[] = $email;
+}
+
+// ดึงรายการ Maily Central Accounts เพิ่มเติมเสมอเพื่อรองรับอีเมลที่ส่งต่อ (Forwarding) มายัง Maily Space
+if (isset($config_data['maily_central_accounts']) && is_array($config_data['maily_central_accounts'])) {
+    foreach ($config_data['maily_central_accounts'] as $m_acc) {
+        if (!in_array(strtolower($m_acc), array_map('strtolower', $maily_accounts_to_check))) {
+            $maily_accounts_to_check[] = $m_acc;
         }
     }
 }
+if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+    foreach ($config_data['imap_emails'] as $item) {
+        if (($item['provider'] ?? '') === 'maily' && !empty($item['email'])) {
+            if (!in_array(strtolower($item['email']), array_map('strtolower', $maily_accounts_to_check))) {
+                $maily_accounts_to_check[] = $item['email'];
+            }
+        }
+    }
+}
+if (empty($maily_accounts_to_check)) {
+    $maily_accounts_to_check[] = "codehotmail99@gooddaymail.com";
+}
 
-if ($is_maily_domain) {
-    // -------------------------------------------------------------------------
-    // ช่องทาง A: ดึงตรงจาก Maily Space API
-    // -------------------------------------------------------------------------
-    $parts = explode('@', $email, 2);
+// ดำเนินการสืบค้นข้อมูลผ่าน Maily Space API
+$maily_found_mails = [];
+
+foreach ($maily_accounts_to_check as $target_maily_email) {
+    $parts = explode('@', $target_maily_email, 2);
+    if (count($parts) < 2) continue;
+    
     $account_name = strtolower(trim($parts[0]));
     $domain_id = str_replace('.', '', strtolower(trim($parts[1])));
     
@@ -244,7 +265,7 @@ if ($is_maily_domain) {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -267,34 +288,92 @@ if ($is_maily_domain) {
         }
     }
 
-    if ($http_code !== 200 || !$response) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'ไม่สามารถเชื่อมต่อระบบ Maily Space ได้ชั่วคราว กรุณาลองใหม่อีกครั้ง'
-        ]);
-        exit;
+    if ($http_code === 200 && $response) {
+        $data = json_decode($response, true);
+        $mails = isset($data['data']['mails']) ? $data['data']['mails'] : [];
+        
+        foreach ($mails as $mail) {
+            $html_body = $mail['html'] ?? '';
+            
+            // หากเนื้อหา html ว่างเปล่า ให้ดึงรายละเอียดจดหมาย (Detail API) ล่วงหน้า
+            if (empty($html_body) && !empty($mail['id'])) {
+                $mail_id = $mail['id'];
+                $detail_params = http_build_query([
+                    "accountName" => $account_name,
+                    "domainId" => $domain_id
+                ]);
+                $detail_url = "https://api.maily.space/mail/public/mails/$mail_id?$detail_params";
+                
+                $ch_detail = curl_init();
+                curl_setopt($ch_detail, CURLOPT_URL, $detail_url);
+                curl_setopt($ch_detail, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
+                curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
+                    "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
+                    "Content-Type: application/json"
+                ]);
+                $detail_response = curl_exec($ch_detail);
+                curl_close($ch_detail);
+                
+                if ($detail_response) {
+                    $detail_data = json_decode($detail_response, true);
+                    if (isset($detail_data['data']['html'])) {
+                        $html_body = $detail_data['data']['html'];
+                    }
+                }
+            }
+            
+            $full_text = strtolower(($mail['from'] ?? '') . ' ' . ($mail['subject'] ?? '') . ' ' . $html_body);
+            
+            // ตรวจสอบว่าจดหมายฉบับนี้เกี่ยวกับ target email ของลูกค้าหรือไม่ (ถ้าสืบค้นตรงหรือพบอีเมลในเนื้อหา)
+            $is_target = (strtolower($target_maily_email) === $lower_email || strpos($full_text, $lower_email) !== false || strpos($full_text, explode('@', $lower_email)[0]) !== false);
+            if (!$is_target) continue;
+
+            if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name, $full_text)) {
+                $otp_code = extract_otp_code($html_body) ?? '';
+                $ref_code = extract_ref_code($html_body) ?? '';
+                $time_formatted = parse_utc_timestamp_to_thai($mail['createdAt'] ?? '');
+                
+                $maily_found_mails[] = [
+                    'subject' => $mail['subject'] ?? 'ไม่มีหัวข้อ',
+                    'from' => $mail['from'] ?? '',
+                    'time' => $time_formatted,
+                    'otp' => $otp_code,
+                    'ref' => $ref_code,
+                    'html_body' => $html_body
+                ];
+                
+                break; // พบอีเมลฉบับล่าสุดเรียบร้อยแล้ว
+            }
+        }
     }
 
-    $data = json_decode($response, true);
-    $mails = isset($data['data']['mails']) ? $data['data']['mails'] : [];
-    
-    if (empty($mails)) {
-        echo json_encode([
-            'success' => false,
-            'message' => "ไม่พบกล่องข้อความใดๆ สำหรับอีเมล $email ในขณะนี้"
-        ]);
-        exit;
+    if (!empty($maily_found_mails) && !empty($maily_found_mails[0]['otp'])) {
+        break; // พบรหัส OTP จาก Maily Space แล้ว ไม่ต้องสืบค้นบัญชีถัดไป
     }
-    
-    $matching_mails = [];
-    foreach ($mails as $mail) {
-        $html_body = $mail['html'] ?? '';
-        
-        // หากเนื้อหา html ว่างเปล่า ให้ดึงรายละเอียดจดหมาย (Detail API) ล่วงหน้า
-        if (empty($html_body) && !empty($mail['id'])) {
-            $mail_id = $mail['id'];
-            $detail_params = http_build_query([
-                "accountName" => $account_name,
+}
+
+// หากพบข้อมูลผ่าน Maily Space ให้ส่งผลลัพธ์กลับทันที
+if (!empty($maily_found_mails)) {
+    echo json_encode([
+        'success' => true,
+        'app_name' => $app_name,
+        'email' => $email,
+        'emails' => $maily_found_mails
+    ]);
+    exit;
+}
+
+// หากผู้ใช้ค้นหาด้วยอีเมลที่เป็นโดเมน Maily Space โดยตรงแล้วไม่พบข้อมูล ให้คืนค่าแจ้งเตือน
+if ($is_maily_domain) {
+    echo json_encode([
+        'success' => false,
+        'message' => "ไม่พบอีเมลยืนยันตัวตนสำหรับ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง)"
+    ]);
+    exit;
+}ntName" => $account_name,
                 "domainId" => $domain_id
             ]);
             $detail_url = "https://api.maily.space/mail/public/mails/$mail_id?$detail_params";
