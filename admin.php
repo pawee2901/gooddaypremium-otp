@@ -959,22 +959,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
                 </div>
 
-                <!-- notice for Hotmail/Outlook (no password needed) -->
-                <div id="hotmailNoticeContainer" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-xs text-emerald-800 space-y-1">
-                    <div class="flex items-center gap-1.5 font-bold">
-                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                        <span>Hotmail / Outlook: ไม่ต้องใส่รหัสผ่าน</span>
-                    </div>
-                    <p class="text-[11px] text-emerald-700 leading-relaxed">
-                        ระบบใช้การส่งต่อ (Forwarding) ไปยัง Gmail กลางโดยอัตโนมัติ ไม่ต้องกรอกรหัสผ่านใดๆ ค่ะ
-                    </p>
-                </div>
-
                 <div class="space-y-1.5" id="passInputContainer">
-                    <label class="text-xs font-bold text-gray-700">App Password (รหัสผ่านแอป)</label>
-                    <input type="password" id="emailPassInput" placeholder="รหัสผ่าน App Password สำหรับ IMAP" 
+                    <label class="text-xs font-bold text-gray-700">App Password / รหัสผ่านแอป</label>
+                    <input type="password" id="emailPassInput" placeholder="รหัสผ่าน App Password สำหรับ IMAP (กรณีล็อกอินตรง)" 
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
-                    <p class="text-[10px] text-gray-400">* Gmail ต้องสร้าง App Password ในบัญชี Google เพื่อล็อกอิน IMAP</p>
+                    <p class="text-[10px] text-gray-400">* Gmail/Hotmail: กรอก App Password สำหรับดึงข้อมูลตรงผ่าน IMAP (หรือปล่อยว่างหากตั้ง Forwarding)</p>
                     <div class="flex flex-wrap items-center gap-3 pt-1">
                         <button type="button" onclick="openGuideModal('gmail')" class="text-[11px] font-bold text-purple-600 hover:text-purple-800 underline flex items-center gap-1 cursor-pointer">
                             <i class="fa-brands fa-google text-red-500"></i> ดูวิธีเอา App Password (Gmail)
@@ -1214,23 +1203,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             const btnGmail = document.getElementById('provBtnGmail');
             const btnHotmail = document.getElementById('provBtnHotmail');
             const hostInput = document.getElementById('emailHostInput');
-            const passContainer = document.getElementById('passInputContainer');
-            const passInput = document.getElementById('emailPassInput');
-            const hotmailNotice = document.getElementById('hotmailNoticeContainer');
 
             if (prov === 'gmail') {
                 btnGmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 btnHotmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 hostInput.value = "imap.gmail.com";
-                if (passContainer) passContainer.style.setProperty('display', 'block', 'important');
-                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'none', 'important');
             } else {
                 btnHotmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 btnGmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
                 hostInput.value = "outlook.office365.com";
-                if (passInput) passInput.value = '';
-                if (passContainer) passContainer.style.setProperty('display', 'none', 'important');
-                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'block', 'important');
             }
         }
 
@@ -1245,7 +1226,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         async function handleSaveEmail(event) {
             event.preventDefault();
             const email = document.getElementById('emailAddrInput').value.trim();
-            const password = currentProvider === 'hotmail' ? '' : document.getElementById('emailPassInput').value.trim();
+            const password = document.getElementById('emailPassInput').value.trim();
             const host = document.getElementById('emailHostInput').value.trim();
             const port = document.getElementById('emailPortInput').value.trim();
 

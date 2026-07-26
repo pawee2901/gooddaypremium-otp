@@ -103,14 +103,7 @@ if (file_exists($config_path)) {
                 </div>
             </div>
             
-            <!-- Announcement Warning Badge -->
-            <div class="inline-flex items-center gap-2 bg-amber-50/80 border border-amber-200/60 text-amber-800 text-[11px] md:text-xs px-4 py-2 rounded-2xl font-medium shadow-sm transition-all duration-300 hover:scale-[1.02] max-w-full">
-                <span class="flex h-2 w-2 relative flex-shrink-0">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                </span>
-                <span class="truncate">🔒 ค้นหารหัส OTP สำหรับแอปพลิชัน Disney+ และ TrueID</span>
-            </div>
+
         </div>
 
         <!-- ========================================== -->

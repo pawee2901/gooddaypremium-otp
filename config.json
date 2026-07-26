@@ -27,6 +27,16 @@
             "bg_color": "#FFF5FA",
             "border_color": "#FFE2F3",
             "active": true
+        },
+        {
+            "id": "app_1785027508",
+            "name": "ChatGPT plus",
+            "code": "GP",
+            "logo_path": "/static/app_logo_1785027508_793.png",
+            "keywords": "gpt",
+            "bg_color": "#f0f7ff",
+            "border_color": "#d6e9ff",
+            "active": true
         }
     ],
     "imap_emails": [
@@ -46,7 +56,7 @@
             "provider": "hotmail",
             "host": "outlook.office365.com",
             "port": 993,
-            "password": "",
+            "password": "weejhkymzxqgpdja",
             "app_id": "all",
             "active": true
         },
@@ -59,6 +69,16 @@
             "password": "gtxlslpvzosnztrt",
             "app_id": "all",
             "active": true
+        },
+        {
+            "id": "email_1785028851",
+            "email": "nakl77199@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "oirv aumf fkla lvmr",
+            "app_id": "all",
+            "active": true
         }
     ],
     "gmail_central_accounts": [
@@ -69,6 +89,10 @@
         {
             "user": "phakhbona@gmail.com",
             "pass": "gtxlslpvzosnztrt"
+        },
+        {
+            "user": "nakl77199@gmail.com",
+            "pass": "oirvaumffklalvmr"
         }
     ],
     "api_providers": [
