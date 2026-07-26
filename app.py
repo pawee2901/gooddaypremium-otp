@@ -426,14 +426,18 @@ def get_otp():
                 emails = api_data.get("emails", [])
 
                 for mail in emails:
-                    html_body = mail.get("html", "")
+                    # เก็บ HTML ต้นฉบับไว้ใช้ค้นหา OTP เสมอ เพราะบางเทมเพลต (เช่น ChatGPT/OpenAI)
+                    # วางรหัสไว้ก่อนแท็ก <table> แรก การตัดข้อความก่อนหน้านั้นทิ้งอาจทำให้รหัสที่แท้จริงหายไป
+                    # และไปหยิบตัวเลขอื่นที่ไม่เกี่ยวข้อง (เช่น ปีลิขสิทธิ์ในท้ายอีเมล) มาแสดงผิดแทน
+                    original_html = mail.get("html", "")
+                    html_body = original_html
                     if html_body:
                         table_idx = html_body.find("<table")
                         if table_idx != -1:
                             html_body = html_body[table_idx:]
 
-                    otp_code = extract_otp_code(html_body) or ""
-                    ref_code = extract_ref_code(html_body) or ""
+                    otp_code = extract_otp_code(original_html) or ""
+                    ref_code = extract_ref_code(original_html) or ""
                     formatted_time = parse_cloud_run_date_to_thai(mail.get("date", ""))
 
                     matching_mails.append({

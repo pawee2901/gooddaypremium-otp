@@ -477,7 +477,11 @@ if ($cr_http_code === 200 && $cr_response) {
     $cr_emails = (isset($cr_data['emails']) && is_array($cr_data['emails'])) ? $cr_data['emails'] : [];
 
     foreach ($cr_emails as $mail) {
-        $cr_html_body = $mail['html'] ?? '';
+        // เก็บ HTML ต้นฉบับไว้ใช้ค้นหา OTP เสมอ เพราะบางเทมเพลต (เช่น ChatGPT/OpenAI)
+        // วางรหัสไว้ก่อนแท็ก <table> แรก การตัดข้อความก่อนหน้านั้นทิ้งอาจทำให้รหัสที่แท้จริงหายไป
+        // และไปหยิบตัวเลขอื่นที่ไม่เกี่ยวข้อง (เช่น ปีลิขสิทธิ์ในท้ายอีเมล) มาแสดงผิดแทน
+        $cr_original_html = $mail['html'] ?? '';
+        $cr_html_body = $cr_original_html;
         if ($cr_html_body) {
             $table_idx = strpos($cr_html_body, '<table');
             if ($table_idx !== false) {
@@ -485,8 +489,8 @@ if ($cr_http_code === 200 && $cr_response) {
             }
         }
 
-        $otp_code = extract_otp_code($cr_html_body) ?? '';
-        $ref_code = extract_ref_code($cr_html_body) ?? '';
+        $otp_code = extract_otp_code($cr_original_html) ?? '';
+        $ref_code = extract_ref_code($cr_original_html) ?? '';
         $formatted_time = parse_cloud_run_date_to_thai($mail['date'] ?? '');
 
         $cloud_run_found[] = [
