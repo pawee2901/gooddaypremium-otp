@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
 
 // =========================================================================
@@ -327,8 +329,15 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
             
             $full_text = strtolower(($mail['from'] ?? '') . ' ' . ($mail['subject'] ?? '') . ' ' . $html_body);
             
-            // ตรวจสอบว่าจดหมายฉบับนี้เกี่ยวกับ target email ของลูกค้าหรือไม่ (ถ้าสืบค้นตรงหรือพบอีเมลในเนื้อหา)
-            $is_target = (strtolower($target_maily_email) === $lower_email || strpos($full_text, $lower_email) !== false || strpos($full_text, explode('@', $lower_email)[0]) !== false);
+            $user_part = explode('@', $lower_email)[0] ?? '';
+            $is_target = (strtolower($target_maily_email) === $lower_email);
+            if (!$is_target && !empty($lower_email)) {
+                if (strpos($full_text, $lower_email) !== false) {
+                    $is_target = true;
+                } elseif (!empty($user_part) && strlen($user_part) >= 3 && strpos($full_text, $user_part) !== false) {
+                    $is_target = true;
+                }
+            }
             if (!$is_target) continue;
 
             if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name, $full_text)) {
