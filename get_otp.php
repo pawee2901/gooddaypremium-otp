@@ -212,6 +212,15 @@ foreach ($maily_domains as $d) {
     }
 }
 
+if (!$is_maily_domain && isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+    foreach ($config_data['imap_emails'] as $item) {
+        if (strtolower($item['email'] ?? '') === $lower_email && ($item['provider'] ?? '') === 'maily') {
+            $is_maily_domain = true;
+            break;
+        }
+    }
+}
+
 if ($is_maily_domain) {
     // -------------------------------------------------------------------------
     // ช่องทาง A: ดึงตรงจาก Maily Space API
@@ -279,38 +288,41 @@ if ($is_maily_domain) {
     
     $matching_mails = [];
     foreach ($mails as $mail) {
-        if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name)) {
-            $html_body = $mail['html'] ?? '';
+        $html_body = $mail['html'] ?? '';
+        
+        // หากเนื้อหา html ว่างเปล่า ให้ดึงรายละเอียดจดหมาย (Detail API) ล่วงหน้า
+        if (empty($html_body) && !empty($mail['id'])) {
+            $mail_id = $mail['id'];
+            $detail_params = http_build_query([
+                "accountName" => $account_name,
+                "domainId" => $domain_id
+            ]);
+            $detail_url = "https://api.maily.space/mail/public/mails/$mail_id?$detail_params";
             
-            if (empty($html_body) && !empty($mail['id'])) {
-                $mail_id = $mail['id'];
-                $detail_params = http_build_query([
-                    "accountName" => $account_name,
-                    "domainId" => $domain_id
-                ]);
-                $detail_url = "https://api.maily.space/mail/public/mails/$mail_id?$detail_params";
-                
-                $ch_detail = curl_init();
-                curl_setopt($ch_detail, CURLOPT_URL, $detail_url);
-                curl_setopt($ch_detail, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
-                curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
-                    "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
-                    "Content-Type: application/json"
-                ]);
-                $detail_response = curl_exec($ch_detail);
-                curl_close($ch_detail);
-                
-                if ($detail_response) {
-                    $detail_data = json_decode($detail_response, true);
-                    if (isset($detail_data['data']['html'])) {
-                        $html_body = $detail_data['data']['html'];
-                    }
+            $ch_detail = curl_init();
+            curl_setopt($ch_detail, CURLOPT_URL, $detail_url);
+            curl_setopt($ch_detail, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
+                "Content-Type: application/json"
+            ]);
+            $detail_response = curl_exec($ch_detail);
+            curl_close($ch_detail);
+            
+            if ($detail_response) {
+                $detail_data = json_decode($detail_response, true);
+                if (isset($detail_data['data']['html'])) {
+                    $html_body = $detail_data['data']['html'];
                 }
             }
-            
+        }
+        
+        $full_text = strtolower(($mail['from'] ?? '') . ' ' . ($mail['subject'] ?? '') . ' ' . $html_body);
+        
+        if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name, $full_text)) {
             $otp_code = extract_otp_code($html_body) ?? '';
             $ref_code = extract_ref_code($html_body) ?? '';
             $time_formatted = parse_utc_timestamp_to_thai($mail['createdAt'] ?? '');

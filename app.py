@@ -277,6 +277,13 @@ def get_otp():
             is_maily_domain = True
             break
 
+    if not is_maily_domain:
+        config_data = load_config()
+        for item in config_data.get('imap_emails', []):
+            if item.get('email', '').strip().lower() == lower_email and item.get('provider') == 'maily':
+                is_maily_domain = True
+                break
+
     # -------------------------------------------------------------------------
     # ช่องทาง A: การดึงโดยตรงจาก Maily Space (กรณีเป็นอีเมล Maily Space ตรง)
     # -------------------------------------------------------------------------
@@ -337,26 +344,28 @@ def get_otp():
                 
             matching_mails = []
             for mail in mails:
-                if matches_app(mail.get("from", ""), mail.get("subject", ""), app_name):
-                    html_body = mail.get("html", "")
-                    
-                    # หากเนื้อหา html ว่างเปล่า ให้ดึงผ่านรายละเอียดจดหมาย (Detail API)
-                    if not html_body and mail.get("id"):
-                        mail_id = mail.get("id")
-                        detail_url = f"https://api.maily.space/mail/public/mails/{mail_id}"
-                        detail_params = {
-                            "accountName": account_name,
-                            "domainId": domain_id
-                        }
-                        try:
-                            detail_headers = {"Authorization": f"Bearer {working_token or token_1}", "Content-Type": "application/json"}
-                            detail_res = requests.get(detail_url, params=detail_params, headers=detail_headers, timeout=5, verify=False)
-                            if detail_res.status_code == 200:
-                                detail_data = detail_res.json()
-                                html_body = detail_data.get("data", {}).get("html", "")
-                        except Exception:
-                            pass
-                            
+                html_body = mail.get("html", "")
+                
+                # หากเนื้อหา html ว่างเปล่า ให้ดึงผ่านรายละเอียดจดหมาย (Detail API) ล่วงหน้า
+                if not html_body and mail.get("id"):
+                    mail_id = mail.get("id")
+                    detail_url = f"https://api.maily.space/mail/public/mails/{mail_id}"
+                    detail_params = {
+                        "accountName": account_name,
+                        "domainId": domain_id
+                    }
+                    try:
+                        detail_headers = {"Authorization": f"Bearer {working_token or token_1}", "Content-Type": "application/json"}
+                        detail_res = requests.get(detail_url, params=detail_params, headers=detail_headers, timeout=5, verify=False)
+                        if detail_res.status_code == 200:
+                            detail_data = detail_res.json()
+                            html_body = detail_data.get("data", {}).get("html", "")
+                    except Exception:
+                        pass
+                
+                full_text = (mail.get("from", "") + " " + mail.get("subject", "") + " " + html_body).lower()
+
+                if matches_app(mail.get("from", ""), mail.get("subject", ""), app_name, full_text):
                     otp_code = extract_otp_code(html_body) or ""
                     ref_code = extract_ref_code(html_body) or ""
                     formatted_time = parse_utc_timestamp_to_thai(mail.get("createdAt", ""))
