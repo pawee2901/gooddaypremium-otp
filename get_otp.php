@@ -404,10 +404,10 @@ if ($is_maily_domain) {
             continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
         }
 
-        // ดึงเฉพาะ 2 อีเมลล่าสุดตามที่ได้รับการอนุมัติจากผู้ใช้เพื่อความเร็วสูงสุด
+        // ค้นหาจาก 30 อีเมลล่าสุดโดยเช็คเฉพาะ Header ก่อนเพื่อความรวดเร็วและไม่พลาดจดหมายที่ส่งต่อ
         $num_msg = @imap_num_msg($imap_conn);
         if ($num_msg > 0) {
-            $start_msg = max(1, $num_msg - 1); // 2 อีเมลล่าสุด ($num_msg และ $num_msg - 1)
+            $start_msg = max(1, $num_msg - 29); // สแกนลึก 30 ฉบับล่าสุดในกล่องกลาง
             
             for ($msgno = $num_msg; $msgno >= $start_msg; $msgno--) {
                 $header = @imap_headerinfo($imap_conn, $msgno);

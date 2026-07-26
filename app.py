@@ -453,10 +453,10 @@ def get_otp():
                             if status != 'OK':
                                 M.select('INBOX', readonly=True)
 
-                            # ดึงเฉพาะ 2 อีเมลล่าสุดตามที่ได้รับการอนุมัติจากผู้ใช้เพื่อความเร็วสูงสุด
+                            # ค้นหาจาก 30 อีเมลล่าสุดเพื่อไม่ให้พลาดจดหมาย Forwarding
                             typ, data = M.search(None, 'ALL')
                             all_ids = data[0].split()
-                            latest_ids = all_ids[-2:] if len(all_ids) >= 2 else all_ids
+                            latest_ids = all_ids[-30:] if len(all_ids) >= 30 else all_ids
                             latest_ids = list(reversed(latest_ids))  # เรียงใหม่สุดก่อน
 
                             found_in_account = False
