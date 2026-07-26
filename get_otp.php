@@ -362,12 +362,46 @@ if ($is_maily_domain) {
         }
     }
 
-    // ถ้าไม่มีเมลตรงๆ (เช่นเป็น Hotmail ของลูกค้า) ให้หาใน Gmail ทุกบัญชีในระบบ
-    if (!$direct_match_found && isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
-        foreach ($config_data['imap_emails'] as $imap_item) {
-            if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
-                $imap_accounts_to_check[] = $imap_item;
+    // ถ้าไม่มีเมลตรงๆ (เช่นเป็น Hotmail ของลูกค้า) ให้หาใน Gmail กลางทั้งหมด
+    if (!$direct_match_found) {
+        // 1. หาจาก gmail_central_accounts ใน config.json
+        if (isset($config_data['gmail_central_accounts']) && is_array($config_data['gmail_central_accounts'])) {
+            foreach ($config_data['gmail_central_accounts'] as $gacc) {
+                if (!empty($gacc['user']) && !empty($gacc['pass'])) {
+                    $imap_accounts_to_check[] = [
+                        'email' => $gacc['user'],
+                        'password' => $gacc['pass'],
+                        'host' => 'imap.gmail.com',
+                        'port' => 993
+                    ];
+                }
             }
+        }
+
+        // 2. หาจาก imap_emails ที่เป็น gmail และมี password
+        if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+            foreach ($config_data['imap_emails'] as $imap_item) {
+                if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
+                    $already_in = false;
+                    foreach ($imap_accounts_to_check as $chk) {
+                        if (strtolower($chk['email'] ?? '') === strtolower($imap_item['email'] ?? '')) {
+                            $already_in = true;
+                            break;
+                        }
+                    }
+                    if (!$already_in) {
+                        $imap_accounts_to_check[] = $imap_item;
+                    }
+                }
+            }
+        }
+
+        // 3. ถ้ายังไม่มี ให้ใช้ค่า default Gmail Central ทั้งหมด
+        if (empty($imap_accounts_to_check)) {
+            $imap_accounts_to_check = [
+                ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
+                ['email' => 'phakhbona@gmail.com', 'password' => 'gtxlslpvzosnztrt', 'host' => 'imap.gmail.com', 'port' => 993]
+            ];
         }
     }
 
