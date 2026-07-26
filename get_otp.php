@@ -382,72 +382,11 @@ if ($is_maily_domain) {
         'message' => "ไม่พบอีเมลยืนยันตัวตนสำหรับ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง)"
     ]);
     exit;
-}ntName" => $account_name,
-                "domainId" => $domain_id
-            ]);
-            $detail_url = "https://api.maily.space/mail/public/mails/$mail_id?$detail_params";
-            
-            $ch_detail = curl_init();
-            curl_setopt($ch_detail, CURLOPT_URL, $detail_url);
-            curl_setopt($ch_detail, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
-            curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
-                "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
-                "Content-Type: application/json"
-            ]);
-            $detail_response = curl_exec($ch_detail);
-            curl_close($ch_detail);
-            
-            if ($detail_response) {
-                $detail_data = json_decode($detail_response, true);
-                if (isset($detail_data['data']['html'])) {
-                    $html_body = $detail_data['data']['html'];
-                }
-            }
-        }
-        
-        $full_text = strtolower(($mail['from'] ?? '') . ' ' . ($mail['subject'] ?? '') . ' ' . $html_body);
-        
-        if (matches_app($mail['from'] ?? '', $mail['subject'] ?? '', $app_name, $full_text)) {
-            $otp_code = extract_otp_code($html_body) ?? '';
-            $ref_code = extract_ref_code($html_body) ?? '';
-            $time_formatted = parse_utc_timestamp_to_thai($mail['createdAt'] ?? '');
-            
-            $matching_mails[] = [
-                'subject' => $mail['subject'] ?? 'ไม่มีหัวข้อ',
-                'from' => $mail['from'] ?? '',
-                'time' => $time_formatted,
-                'otp' => $otp_code,
-                'ref' => $ref_code,
-                'html_body' => $html_body
-            ];
-            
-            break;
-        }
-    }
-    
-    if (empty($matching_mails)) {
-        echo json_encode([
-            'success' => false,
-            'message' => "ไม่พบอีเมลยืนยันสำหรับ $app_name ส่งมายังกล่องจดหมายนี้ (กรุณากดส่งรหัส OTP หรือรอสักครู่แล้วค้นหาอีกครั้ง)"
-        ]);
-        exit;
-    }
-    
-    echo json_encode([
-        'success' => true,
-        'app_name' => $app_name,
-        'email' => $email,
-        'emails' => $matching_mails
-    ]);
-    exit;
+}
 
-} else {
-    // -------------------------------------------------------------------------
-    // ช่องทาง B: Centralized Catch-All (ดึงจาก Gmail หลักทั้งหมด)
-    // -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// ช่องทาง B: Centralized Catch-All (ดึงจาก Gmail หลักทั้งหมด)
+// -------------------------------------------------------------------------
     
     $imap_accounts_to_check = [];
     $direct_match_found = false;
@@ -596,4 +535,3 @@ if ($is_maily_domain) {
         'emails'   => $matching_mails
     ]);
     exit;
-}
