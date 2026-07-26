@@ -404,41 +404,36 @@ if ($is_maily_domain) {
             continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
         }
 
-        // ดึงจดหมายล่าสุด 30 ฉบับ
-        $search_results = @imap_search($imap_conn, 'ALL', SE_UID);
-        
-        if ($search_results) {
-            rsort($search_results); // เรียงล่าสุดก่อน
-            $limit = min(30, count($search_results));
+        // ดึงเฉพาะ 2 อีเมลล่าสุดตามที่ได้รับการอนุมัติจากผู้ใช้เพื่อความเร็วสูงสุด
+        $num_msg = @imap_num_msg($imap_conn);
+        if ($num_msg > 0) {
+            $start_msg = max(1, $num_msg - 1); // 2 อีเมลล่าสุด ($num_msg และ $num_msg - 1)
             
-            for ($i = 0; $i < $limit; $i++) {
-                $uid = $search_results[$i];
-                $header = @imap_rfc822_parse_headers(@imap_fetchheader($imap_conn, $uid, FT_UID));
-                $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
+            for ($msgno = $num_msg; $msgno >= $start_msg; $msgno--) {
+                $header = @imap_headerinfo($imap_conn, $msgno);
+                if (!$header) continue;
+
                 $from_obj = isset($header->from[0]) ? $header->from[0] : null;
                 $from_email = $from_obj ? ($from_obj->mailbox . '@' . $from_obj->host) : '';
                 
                 $to_obj = isset($header->to[0]) ? $header->to[0] : null;
                 $to_email = $to_obj ? ($to_obj->mailbox . '@' . $to_obj->host) : '';
 
-                // ดึง body ทั้งหมด
-                $b_raw = @imap_fetchbody($imap_conn, $uid, '', FT_UID);
-                $b_1   = @imap_fetchbody($imap_conn, $uid, '1', FT_UID);
-                $b_2   = @imap_fetchbody($imap_conn, $uid, '2', FT_UID);
-                $b_11  = @imap_fetchbody($imap_conn, $uid, '1.1', FT_UID);
+                $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
 
-                $struct = @imap_fetchstructure($imap_conn, $uid, FT_UID);
-                $encoding = isset($struct->parts[0]->encoding) ? $struct->parts[0]->encoding : ($struct->encoding ?? 0);
+                // ตรวจสอบอายุจดหมาย - ถ้าส่งมาเกิน 2 ชั่วโมง ให้ข้ามทันที
+                $udate = isset($header->udate) ? intval($header->udate) : (strtotime($header->date ?? '') ?: time());
+                if ((time() - $udate) > 7200) {
+                    continue;
+                }
 
-                $body = $b_1;
-                if ($encoding == 3) $body = base64_decode($body);
-                elseif ($encoding == 4) $body = quoted_printable_decode($body);
+                // ดึง body เฉพาะฉบับที่เวลาผ่านการกรอง
+                $body = @imap_body($imap_conn, $msgno);
+                if (empty($body)) {
+                    $body = @imap_fetchbody($imap_conn, $msgno, '1');
+                }
 
-                if (empty($body)) $body = $b_2;
-                if (empty($body)) $body = $b_11;
-                if (empty($body)) $body = $b_raw;
-
-                $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body . ' ' . $b_raw);
+                $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
 
                 // ตรวจสอบว่าเกี่ยวข้องกับ target email ของลูกค้าหรือไม่
                 $is_target = (strtolower($to_email) === $lower_email || strpos($full_text, $lower_email) !== false);
@@ -447,26 +442,33 @@ if ($is_maily_domain) {
                 // กรองแอป (Netflix, Disney, True, OpenAI/ChatGPT etc)
                 if (!matches_app($from_email, $subject, $app_name, $full_text)) continue;
 
-                $date_header = isset($header->date) ? $header->date : '';
-                $date_ts = strtotime($date_header) ?: time();
-                $thai_time = date('d/m/', $date_ts) . (date('Y', $date_ts) + 543) . ' ' . date('H:i', $date_ts) . ' น.';
+                $thai_time = date('d/m/', $udate) . (date('Y', $udate) + 543) . ' ' . date('H:i', $udate) . ' น.';
 
-                $otp_code = extract_otp_code($body ?: $b_raw) ?? '';
-                $ref_code  = extract_ref_code($body ?: $b_raw) ?? '';
+                $otp_code = extract_otp_code($body) ?? '';
+                $ref_code  = extract_ref_code($body) ?? '';
 
                 $all_found[] = [
                     'subject'   => $subject ?: 'ไม่มีหัวข้อ',
                     'from'      => $from_email,
                     'time'      => $thai_time,
-                    'timestamp' => $date_ts,
+                    'timestamp' => $udate,
                     'otp'       => $otp_code,
                     'ref'       => $ref_code,
-                    'html_body' => $body ?: $b_raw
+                    'html_body' => $body
                 ];
-                break; // ได้อีเมลล่าสุดของบัญชีนี้แล้ว ไปเช็กบัญชีถัดไป
+
+                // หากพบรหัส OTP แล้ว ให้หยุดอ่านฉบับถัดไปทันที
+                if (!empty($otp_code)) {
+                    break;
+                }
             }
         }
         @imap_close($imap_conn);
+
+        // หากพบรหัส OTP ในบัญชีนี้เรียบร้อยแล้ว ไม่จำเป็นต้องค้นหาบัญชีถัดไป
+        if (!empty($all_found) && !empty($all_found[0]['otp'])) {
+            break;
+        }
     }
 
     // เรียงจดหมายที่พบทั้งหมดตามเวลาล่าสุดจริงๆ (timestamp จากมากไปน้อย)

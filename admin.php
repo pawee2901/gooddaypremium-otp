@@ -175,6 +175,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($provider === 'hotmail' || strpos(strtolower($email_addr), '@hotmail') !== false || strpos(strtolower($email_addr), '@outlook') !== false || strpos(strtolower($email_addr), '@live') !== false) {
                 $host = 'outlook.office365.com';
                 $provider = 'hotmail';
+            } elseif ($provider === 'maily' || strpos(strtolower($email_addr), '@lico.moe') !== false || strpos(strtolower($email_addr), '@rdcw.plus') !== false || strpos(strtolower($email_addr), '@gooddaymail.com') !== false) {
+                $host = 'api.maily.space';
+                $provider = 'maily';
             } else {
                 $host = 'imap.gmail.com';
             }
@@ -679,10 +682,35 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     </div>
                 </div>
 
+                <!-- Search Box (ช่องค้นหาอีเมล) -->
+                <?php $imap_emails = isset($config['imap_emails']) ? $config['imap_emails'] : []; ?>
+                <div class="flex items-center justify-between gap-3 bg-gray-50/70 border border-gray-200/80 rounded-2xl p-2.5 sm:px-4">
+                    <div class="flex items-center gap-2.5 flex-1">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                        <input type="text" 
+                               id="emailSearchInput" 
+                               oninput="filterEmailList(this.value)" 
+                               placeholder="พิมพ์ค้นหาอีเมล เช่น @gmail.com หรือชื่อบัญชี..." 
+                               class="w-full bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none placeholder-gray-400 font-medium">
+                        <button type="button" 
+                                id="clearEmailSearchBtn" 
+                                onclick="clearEmailSearch()" 
+                                class="hidden text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded-full hover:bg-gray-200/60 transition-all">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <span id="emailSearchCount" class="text-[11px] font-bold text-gray-400 whitespace-nowrap bg-white px-2.5 py-1 rounded-xl border border-gray-100 shadow-xs">
+                        <?php echo count($imap_emails); ?> รายการ
+                    </span>
+                </div>
+
                 <!-- Grid รายการอีเมลที่บันทึกไว้ -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="emailListGrid">
+                    <div id="noEmailSearchResult" class="hidden col-span-full text-center py-10 text-gray-400 text-xs font-medium">
+                        <i class="fa-solid fa-magnifying-glass text-gray-300 text-2xl mb-2 block"></i>
+                        ไม่พบอีเมลที่ตรงกับคำค้นหา
+                    </div>
                     <?php 
-                    $imap_emails = isset($config['imap_emails']) ? $config['imap_emails'] : [];
                     if (empty($imap_emails)): 
                     ?>
                     <div class="col-span-full text-center py-10 text-gray-400 text-xs font-medium">
@@ -691,7 +719,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     <?php else: foreach ($imap_emails as $item): 
                         $is_active = isset($item['active']) ? (bool)$item['active'] : true;
                     ?>
-                    <div class="border rounded-2xl p-3.5 sm:p-4 flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60 hover:border-emerald-300' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>">
+                    <div class="email-card border rounded-2xl p-3.5 sm:p-4 flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60 hover:border-emerald-300' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>" data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>">
                         <div class="flex items-center gap-3 min-w-0 w-full xs:w-auto">
                             <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-base sm:text-lg flex-shrink-0 <?php echo $is_active ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' : 'bg-rose-100 border border-rose-200 text-rose-700'; ?>">
                                 <i class="fa-regular fa-envelope"></i>
@@ -942,19 +970,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 <!-- เลือกประเภทผู้ให้บริการ -->
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ผู้ให้บริการอีเมล (Provider)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="selectProvider('gmail')" id="provBtnGmail" class="border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                            <i class="fa-brands fa-google"></i> Gmail
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectProvider('gmail')" id="provBtnGmail" class="border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all">
+                            <i class="fa-brands fa-google text-red-500"></i> Gmail
                         </button>
-                        <button type="button" onclick="selectProvider('hotmail')" id="provBtnHotmail" class="border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                            <i class="fa-brands fa-microsoft"></i> Hotmail/Outlook
+                        <button type="button" onclick="selectProvider('hotmail')" id="provBtnHotmail" class="border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all">
+                            <i class="fa-brands fa-microsoft text-blue-600"></i> Hotmail
+                        </button>
+                        <button type="button" onclick="selectProvider('maily')" id="provBtnMaily" class="border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all">
+                            <i class="fa-solid fa-bolt text-amber-500"></i> Maily Space
                         </button>
                     </div>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ที่อยู่อีเมล (Email Address)</label>
-                    <input type="email" id="emailAddrInput" required placeholder="เช่น example@gmail.com หรือ hotmail.com" 
+                    <input type="email" id="emailAddrInput" required placeholder="เช่น example@gmail.com, hotmail.com หรือ @gooddaymail.com" 
                            oninput="autoDetectAdminProvider(this.value)"
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
                 </div>
@@ -967,6 +998,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     </div>
                     <p class="text-[11px] text-emerald-700 leading-relaxed">
                         ระบบใช้การส่งต่อ (Forwarding) ไปยัง Gmail กลางโดยอัตโนมัติ ไม่ต้องกรอกรหัสผ่านใดๆ ค่ะ
+                    </p>
+                </div>
+
+                <!-- notice for Maily Space (no password needed) -->
+                <div id="mailyNoticeContainer" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-900 space-y-1">
+                    <div class="flex items-center gap-1.5 font-bold">
+                        <i class="fa-solid fa-bolt text-amber-500"></i>
+                        <span>Maily Space: ไม่ต้องใส่รหัสผ่าน</span>
+                    </div>
+                    <p class="text-[11px] text-amber-700 leading-relaxed">
+                        ระบบดึงข้อมูลผ่าน Maily Space API อัตโนมัติทันที ไม่ต้องกรอกรหัสผ่านใดๆ ค่ะ (รองรับ @lico.moe, @rdcw.plus, @gooddaymail.com ฯลฯ)
                     </p>
                 </div>
 
@@ -1213,29 +1255,53 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             currentProvider = prov;
             const btnGmail = document.getElementById('provBtnGmail');
             const btnHotmail = document.getElementById('provBtnHotmail');
+            const btnMaily = document.getElementById('provBtnMaily');
             const hostInput = document.getElementById('emailHostInput');
+            const portInput = document.getElementById('emailPortInput');
             const passContainer = document.getElementById('passInputContainer');
             const passInput = document.getElementById('emailPassInput');
             const hotmailNotice = document.getElementById('hotmailNoticeContainer');
+            const mailyNotice = document.getElementById('mailyNoticeContainer');
+
+            const activeClass = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all";
+            const inactiveClass = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all";
 
             if (prov === 'gmail') {
-                btnGmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
-                btnHotmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
-                hostInput.value = "imap.gmail.com";
+                if (btnGmail) btnGmail.className = activeClass;
+                if (btnHotmail) btnHotmail.className = inactiveClass;
+                if (btnMaily) btnMaily.className = inactiveClass;
+                if (hostInput) hostInput.value = "imap.gmail.com";
+                if (portInput) portInput.value = "993";
                 if (passContainer) passContainer.style.setProperty('display', 'block', 'important');
                 if (hotmailNotice) hotmailNotice.style.setProperty('display', 'none', 'important');
-            } else {
-                btnHotmail.className = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
-                btnGmail.className = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all";
-                hostInput.value = "outlook.office365.com";
+                if (mailyNotice) mailyNotice.style.setProperty('display', 'none', 'important');
+            } else if (prov === 'hotmail') {
+                if (btnHotmail) btnHotmail.className = activeClass;
+                if (btnGmail) btnGmail.className = inactiveClass;
+                if (btnMaily) btnMaily.className = inactiveClass;
+                if (hostInput) hostInput.value = "outlook.office365.com";
+                if (portInput) portInput.value = "993";
                 if (passInput) passInput.value = '';
                 if (passContainer) passContainer.style.setProperty('display', 'none', 'important');
                 if (hotmailNotice) hotmailNotice.style.setProperty('display', 'block', 'important');
+                if (mailyNotice) mailyNotice.style.setProperty('display', 'none', 'important');
+            } else if (prov === 'maily') {
+                if (btnMaily) btnMaily.className = activeClass;
+                if (btnGmail) btnGmail.className = inactiveClass;
+                if (btnHotmail) btnHotmail.className = inactiveClass;
+                if (hostInput) hostInput.value = "api.maily.space";
+                if (portInput) portInput.value = "443";
+                if (passInput) passInput.value = '';
+                if (passContainer) passContainer.style.setProperty('display', 'none', 'important');
+                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'none', 'important');
+                if (mailyNotice) mailyNotice.style.setProperty('display', 'block', 'important');
             }
         }
 
         function autoDetectAdminProvider(emailVal) {
-            if (/@(hotmail\.|outlook\.|live\.|msn\.)/i.test(emailVal)) {
+            if (/@(lico\.moe|rdcw\.plus|gooddaymail\.com)/i.test(emailVal)) {
+                selectProvider('maily');
+            } else if (/@(hotmail\.|outlook\.|live\.|msn\.)/i.test(emailVal)) {
                 selectProvider('hotmail');
             } else if (/@gmail\./i.test(emailVal)) {
                 selectProvider('gmail');
@@ -1245,7 +1311,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         async function handleSaveEmail(event) {
             event.preventDefault();
             const email = document.getElementById('emailAddrInput').value.trim();
-            const password = currentProvider === 'hotmail' ? '' : document.getElementById('emailPassInput').value.trim();
+            const password = (currentProvider === 'hotmail' || currentProvider === 'maily') ? '' : document.getElementById('emailPassInput').value.trim();
             const host = document.getElementById('emailHostInput').value.trim();
             const port = document.getElementById('emailPortInput').value.trim();
 
@@ -1534,6 +1600,52 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 }
             } catch (err) {
                 alert('เกิดความขัดข้องในการบันทึกข้อมูล');
+            }
+        }
+        function filterEmailList(query) {
+            const cleanQuery = query.trim().toLowerCase();
+            const cards = document.querySelectorAll('.email-card');
+            const clearBtn = document.getElementById('clearEmailSearchBtn');
+            const countEl = document.getElementById('emailSearchCount');
+            const noResultEl = document.getElementById('noEmailSearchResult');
+            
+            if (clearBtn) {
+                if (cleanQuery.length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            }
+
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const email = card.getAttribute('data-email') || '';
+                if (!cleanQuery || email.includes(cleanQuery)) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            if (countEl) {
+                countEl.innerText = `${visibleCount} รายการ`;
+            }
+
+            if (noResultEl) {
+                if (visibleCount === 0 && cards.length > 0) {
+                    noResultEl.classList.remove('hidden');
+                } else {
+                    noResultEl.classList.add('hidden');
+                }
+            }
+        }
+
+        function clearEmailSearch() {
+            const input = document.getElementById('emailSearchInput');
+            if (input) {
+                input.value = '';
+                filterEmailList('');
             }
         }
     </script>

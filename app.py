@@ -453,10 +453,10 @@ def get_otp():
                             if status != 'OK':
                                 M.select('INBOX', readonly=True)
 
-                            # ดึง 30 อีเมลล่าสุด
+                            # ดึงเฉพาะ 2 อีเมลล่าสุดตามที่ได้รับการอนุมัติจากผู้ใช้เพื่อความเร็วสูงสุด
                             typ, data = M.search(None, 'ALL')
                             all_ids = data[0].split()
-                            latest_ids = all_ids[-30:] if len(all_ids) >= 30 else all_ids
+                            latest_ids = all_ids[-2:] if len(all_ids) >= 2 else all_ids
                             latest_ids = list(reversed(latest_ids))  # เรียงใหม่สุดก่อน
 
                             found_in_account = False
@@ -553,11 +553,14 @@ def get_otp():
                                         'html_body': display_html
                                     })
                                     found_in_account = True
-                                    break  # ได้อันล่าสุดของบัญชีนี้แล้ว
+                                    if otp_code:
+                                        break  # หากพบ OTP แล้ว ให้หยุดอ่านฉบับถัดไปทันที
                                 except Exception:
                                     continue
 
                             M.logout()
+                            if found_in_account and matching_mails and matching_mails[0].get('otp'):
+                                break # หยุดค้นหาบัญชีถัดไปหากได้ OTP เรียบร้อยแล้ว
                         except Exception:
                             pass
 
