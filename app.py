@@ -160,22 +160,23 @@ def parse_cloud_run_date_to_thai(date_str):
     return datetime.now().strftime('%d/%m/%Y %H:%M น.')
 
 # ฟังก์ชันตรวจสอบคัดกรองหัวจดหมายและผู้ส่งให้ตรงตามระบบแอปพลิเคชันที่เลือก
-def matches_app(mail_from, mail_subject, app_name):
+def matches_app(mail_from, mail_subject, app_name, body=""):
     lower_from = mail_from.lower() if mail_from else ""
     lower_sub = mail_subject.lower() if mail_subject else ""
     lower_app = app_name.lower()
+    lower_body = body.lower() if body else ""
     
     if "netflix" in lower_app:
-        return "netflix" in lower_from or "netflix" in lower_sub
+        return "netflix" in lower_from or "netflix" in lower_sub or "netflix" in lower_body
     elif "disney" in lower_app:
-        return "disney" in lower_from or "disney" in lower_sub
+        return "disney" in lower_from or "disney" in lower_sub or "disney" in lower_body
     elif "true" in lower_app:
-        return "true" in lower_from or "true" in lower_sub
-    elif "chat" in lower_app or "openai" in lower_app:
-        return "openai" in lower_from or "openai" in lower_sub or "chatgpt" in lower_from or "chatgpt" in lower_sub
+        return "true" in lower_from or "true" in lower_sub or "true" in lower_body
+    elif "chat" in lower_app or "openai" in lower_app or "gpt" in lower_app:
+        return "openai" in lower_from or "openai" in lower_sub or "chatgpt" in lower_from or "chatgpt" in lower_sub or "openai" in lower_body or "chatgpt" in lower_body
     elif "prime" in lower_app or "amazon" in lower_app:
-        return "prime" in lower_from or "prime" in lower_sub or "amazon" in lower_from or "amazon" in lower_sub
-    return False
+        return "prime" in lower_from or "prime" in lower_sub or "amazon" in lower_from or "amazon" in lower_sub or "prime" in lower_body or "amazon" in lower_body
+    return lower_app in lower_from or lower_app in lower_sub or lower_app in lower_body
 
 # ฟังก์ชันถอดตัวเลข OTP ออกมาอย่างแม่นยำจาก HTML Body ของจดหมายจริง
 def extract_otp_code(html_body):
@@ -514,7 +515,7 @@ def get_otp():
                                         continue
 
                                     # ตรวจว่าตรงกับ app_name หรือไม่
-                                    if not matches_app(sender, subject, app_name):
+                                    if not matches_app(sender, subject, app_name, full_text):
                                         continue
 
                                     # แยก table จาก html_body
@@ -527,8 +528,10 @@ def get_otp():
                                     otp_code = extract_otp_code(html_body or plain_body) or ""
                                     ref_code = extract_ref_code(html_body or plain_body) or ""
 
+                                    ts_val = 0
                                     try:
                                         dt = email.utils.parsedate_to_datetime(date_str)
+                                        ts_val = dt.timestamp()
                                         tz_thai = timezone(timedelta(hours=7))
                                         dt_thai = dt.astimezone(tz_thai)
                                         thai_months = {
@@ -544,20 +547,22 @@ def get_otp():
                                         'subject': subject or 'ไม่มีหัวข้อ',
                                         'from': sender or f"{app_name} Security",
                                         'time': formatted_time,
+                                        'timestamp': ts_val,
                                         'otp': otp_code,
                                         'ref': ref_code,
                                         'html_body': display_html
                                     })
                                     found_in_account = True
-                                    break  # พบแล้ว ไม่ต้องดูต่อ
+                                    break  # ได้อันล่าสุดของบัญชีนี้แล้ว
                                 except Exception:
                                     continue
 
                             M.logout()
-                            if found_in_account:
-                                break  # ไม่ต้องลองบัญชีอื่น
                         except Exception:
-                            continue
+                            pass
+
+                    # เรียงจดหมายที่พบทั้งหมดตามเวลาล่าสุดจริงๆ (timestamp จากมากไปน้อย)
+                    matching_mails.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
                 except Exception as imap_err:
                     pass  # IMAP fallback ล้มเหลว — ปล่อยผ่าน
 

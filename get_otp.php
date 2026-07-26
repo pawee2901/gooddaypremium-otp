@@ -72,23 +72,24 @@ function get_app_code($name) {
 }
 
 // ฟังก์ชันกรองหัวข้อผู้ส่งให้ตรงตามบริการหลัก
-function matches_app($from, $subject, $name) {
+function matches_app($from, $subject, $name, $body = '') {
     $lower_from = strtolower($from);
     $lower_sub = strtolower($subject);
     $lower_app = strtolower($name);
+    $lower_body = strtolower($body);
     
     if (strpos($lower_app, 'netflix') !== false) {
-        return (strpos($lower_from, 'netflix') !== false || strpos($lower_sub, 'netflix') !== false);
+        return (strpos($lower_from, 'netflix') !== false || strpos($lower_sub, 'netflix') !== false || strpos($lower_body, 'netflix') !== false);
     } elseif (strpos($lower_app, 'disney') !== false) {
-        return (strpos($lower_from, 'disney') !== false || strpos($lower_sub, 'disney') !== false);
+        return (strpos($lower_from, 'disney') !== false || strpos($lower_sub, 'disney') !== false || strpos($lower_body, 'disney') !== false);
     } elseif (strpos($lower_app, 'true') !== false) {
-        return (strpos($lower_from, 'true') !== false || strpos($lower_sub, 'true') !== false);
-    } elseif (strpos($lower_app, 'chat') !== false || strpos($lower_app, 'openai') !== false) {
-        return (strpos($lower_from, 'openai') !== false || strpos($lower_sub, 'openai') !== false || strpos($lower_from, 'chatgpt') !== false || strpos($lower_sub, 'chatgpt') !== false);
+        return (strpos($lower_from, 'true') !== false || strpos($lower_sub, 'true') !== false || strpos($lower_body, 'true') !== false);
+    } elseif (strpos($lower_app, 'chat') !== false || strpos($lower_app, 'openai') !== false || strpos($lower_app, 'gpt') !== false) {
+        return (strpos($lower_from, 'openai') !== false || strpos($lower_sub, 'openai') !== false || strpos($lower_from, 'chatgpt') !== false || strpos($lower_sub, 'chatgpt') !== false || strpos($lower_body, 'openai') !== false || strpos($lower_body, 'chatgpt') !== false);
     } elseif (strpos($lower_app, 'prime') !== false || strpos($lower_app, 'amazon') !== false) {
-        return (strpos($lower_from, 'prime') !== false || strpos($lower_sub, 'prime') !== false || strpos($lower_from, 'amazon') !== false || strpos($lower_sub, 'amazon') !== false);
+        return (strpos($lower_from, 'prime') !== false || strpos($lower_sub, 'prime') !== false || strpos($lower_from, 'amazon') !== false || strpos($lower_sub, 'amazon') !== false || strpos($lower_body, 'prime') !== false || strpos($lower_body, 'amazon') !== false);
     }
-    return false;
+    return (strpos($lower_from, $lower_app) !== false || strpos($lower_sub, $lower_app) !== false || strpos($lower_body, $lower_app) !== false);
 }
 
 // ฟังก์ชันแปลงรูปแบบเวลา UTC จาก Maily Space เป็นเวลาไทยท้องถิ่น (GMT+07:00)
@@ -387,7 +388,7 @@ if ($is_maily_domain) {
         exit;
     }
 
-    $matching_mails = [];
+    $all_found = [];
 
     // วนลูปเช็คทีละบัญชี
     foreach ($imap_accounts_to_check as $creds) {
@@ -403,12 +404,12 @@ if ($is_maily_domain) {
             continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
         }
 
-        // ดึงจดหมายล่าสุด 20 ฉบับ
+        // ดึงจดหมายล่าสุด 30 ฉบับ
         $search_results = @imap_search($imap_conn, 'ALL', SE_UID);
         
         if ($search_results) {
             rsort($search_results); // เรียงล่าสุดก่อน
-            $limit = min(20, count($search_results));
+            $limit = min(30, count($search_results));
             
             for ($i = 0; $i < $limit; $i++) {
                 $uid = $search_results[$i];
@@ -420,51 +421,60 @@ if ($is_maily_domain) {
                 $to_obj = isset($header->to[0]) ? $header->to[0] : null;
                 $to_email = $to_obj ? ($to_obj->mailbox . '@' . $to_obj->host) : '';
 
-                // กรองแอป (Netflix, Disney etc)
-                if (!matches_app($from_email, $subject, $app_name)) continue;
+                // ดึง body ทั้งหมด
+                $b_raw = @imap_fetchbody($imap_conn, $uid, '', FT_UID);
+                $b_1   = @imap_fetchbody($imap_conn, $uid, '1', FT_UID);
+                $b_2   = @imap_fetchbody($imap_conn, $uid, '2', FT_UID);
+                $b_11  = @imap_fetchbody($imap_conn, $uid, '1.1', FT_UID);
 
-                // ดึง body
-                $body = @imap_fetchbody($imap_conn, $uid, '1', FT_UID);
-                if (empty($body)) $body = @imap_fetchbody($imap_conn, $uid, '1.1', FT_UID);
-
-                // Decode
                 $struct = @imap_fetchstructure($imap_conn, $uid, FT_UID);
                 $encoding = isset($struct->parts[0]->encoding) ? $struct->parts[0]->encoding : ($struct->encoding ?? 0);
+
+                $body = $b_1;
                 if ($encoding == 3) $body = base64_decode($body);
                 elseif ($encoding == 4) $body = quoted_printable_decode($body);
 
-                $lower_body = strtolower($body);
-                
-                // ตรวจสอบว่าเป็นของอีเมลลูกค้านี้จริงๆ (ถ้าตรงเป๊ะๆ หรือมีการ Forward มาแล้วมีชื่อเมลอยู่ในเนื้อหา)
-                $is_target = false;
-                if (strtolower($to_email) === $lower_email) {
-                    $is_target = true;
-                } else if (strpos($lower_body, $lower_email) !== false) {
-                    $is_target = true;
-                }
+                if (empty($body)) $body = $b_2;
+                if (empty($body)) $body = $b_11;
+                if (empty($body)) $body = $b_raw;
 
-                if ($is_target) {
-                    $date_header = isset($header->date) ? $header->date : '';
-                    $date_ts = strtotime($date_header);
-                    $thai_time = $date_ts ? date('d/m/', $date_ts) . (date('Y', $date_ts) + 543) . ' ' . date('H:i', $date_ts) . ' น.' : $date_header;
+                $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body . ' ' . $b_raw);
 
-                    $otp_code = extract_otp_code($body) ?? '';
-                    $ref_code  = extract_ref_code($body) ?? '';
+                // ตรวจสอบว่าเกี่ยวข้องกับ target email ของลูกค้าหรือไม่
+                $is_target = (strtolower($to_email) === $lower_email || strpos($full_text, $lower_email) !== false);
+                if (!$is_target) continue;
 
-                    $matching_mails[] = [
-                        'subject'   => $subject ?: 'ไม่มีหัวข้อ',
-                        'from'      => $from_email,
-                        'time'      => $thai_time,
-                        'otp'       => $otp_code,
-                        'ref'       => $ref_code,
-                        'html_body' => $body
-                    ];
-                    break 2; // เจอแล้ว หยุดหา
-                }
+                // กรองแอป (Netflix, Disney, True, OpenAI/ChatGPT etc)
+                if (!matches_app($from_email, $subject, $app_name, $full_text)) continue;
+
+                $date_header = isset($header->date) ? $header->date : '';
+                $date_ts = strtotime($date_header) ?: time();
+                $thai_time = date('d/m/', $date_ts) . (date('Y', $date_ts) + 543) . ' ' . date('H:i', $date_ts) . ' น.';
+
+                $otp_code = extract_otp_code($body ?: $b_raw) ?? '';
+                $ref_code  = extract_ref_code($body ?: $b_raw) ?? '';
+
+                $all_found[] = [
+                    'subject'   => $subject ?: 'ไม่มีหัวข้อ',
+                    'from'      => $from_email,
+                    'time'      => $thai_time,
+                    'timestamp' => $date_ts,
+                    'otp'       => $otp_code,
+                    'ref'       => $ref_code,
+                    'html_body' => $body ?: $b_raw
+                ];
+                break; // ได้อีเมลล่าสุดของบัญชีนี้แล้ว ไปเช็กบัญชีถัดไป
             }
         }
         @imap_close($imap_conn);
     }
+
+    // เรียงจดหมายที่พบทั้งหมดตามเวลาล่าสุดจริงๆ (timestamp จากมากไปน้อย)
+    usort($all_found, function($a, $b) {
+        return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0);
+    });
+
+    $matching_mails = $all_found;
 
     if (empty($matching_mails)) {
         echo json_encode([
