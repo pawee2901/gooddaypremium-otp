@@ -352,32 +352,35 @@ if ($is_maily_domain) {
     $imap_accounts_to_check = [];
     $direct_match_found = false;
 
-    // หาว่าลูกค้ามีเมลตรงกับในระบบไหม
+    // หาว่าลูกค้ามีเมลตรงกับในระบบไหม (ลอง Direct Match ก่อน)
     if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
         foreach ($config_data['imap_emails'] as $imap_item) {
             if (strtolower($imap_item['email'] ?? '') === $lower_email && !empty($imap_item['password'])) {
                 $imap_accounts_to_check[] = $imap_item;
-                $direct_match_found = true;
                 break;
             }
         }
     }
 
-    // ถ้าไม่มีเมลตรงๆ (เช่นเป็น Hotmail ของลูกค้า) ให้หาใน Gmail ทุกบัญชีในระบบ
-    if (!$direct_match_found) {
-        if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
-            foreach ($config_data['imap_emails'] as $imap_item) {
-                if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
-                    $imap_accounts_to_check[] = $imap_item;
+    // เพิ่ม Gmail Central Accounts ต่อท้ายเสมอ เพื่อเป็น Fallback สำรองหาก Direct Match ล้มเหลวหรือไม่มี OTP
+    $gmail_central = [];
+    if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+        foreach ($config_data['imap_emails'] as $imap_item) {
+            if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
+                if (empty($imap_accounts_to_check) || strtolower($imap_accounts_to_check[0]['email'] ?? '') !== strtolower($imap_item['email'] ?? '')) {
+                    $gmail_central[] = $imap_item;
                 }
             }
         }
-        if (empty($imap_accounts_to_check)) {
-            $imap_accounts_to_check = [
-                ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
-                ['email' => 'phakhbona@gmail.com', 'password' => 'gtxlslpvzosnztrt', 'host' => 'imap.gmail.com', 'port' => 993]
-            ];
-        }
+    }
+    if (empty($gmail_central)) {
+        $gmail_central = [
+            ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
+            ['email' => 'phakhbona@gmail.com', 'password' => 'gtxlslpvzosnztrt', 'host' => 'imap.gmail.com', 'port' => 993]
+        ];
+    }
+    foreach ($gmail_central as $gc) {
+        $imap_accounts_to_check[] = $gc;
     }
 
     if (empty($imap_accounts_to_check)) {
