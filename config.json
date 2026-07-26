@@ -41,6 +41,16 @@
             "active": true
         },
         {
+            "id": "email_simnee22",
+            "email": "simnee22@hotmail.com",
+            "provider": "hotmail",
+            "host": "outlook.office365.com",
+            "port": 993,
+            "password": "",
+            "app_id": "all",
+            "active": true
+        },
+        {
             "id": "email_2",
             "email": "phakhbona@gmail.com",
             "provider": "gmail",
