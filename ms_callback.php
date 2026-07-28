@@ -17,6 +17,22 @@ ini_set('display_errors', '0');
     FILE_APPEND
 );
 
+// DEBUG ชั่วคราว: ถ้าไม่มี query string เข้ามาเลย ให้หยุดค้างอยู่หน้านี้แสดงรายละเอียดตรงๆ แทนการ redirect
+// เพื่อให้เห็น URL เต็มๆ ที่ browser navigate มาจริง (ลบส่วนนี้ทิ้งทีหลังเมื่อแก้เสร็จ)
+if (empty($_GET)) {
+    header('Content-Type: text/plain; charset=utf-8');
+    die(
+        "DEBUG: ไม่มี query string เข้ามาเลยที่ไฟล์นี้\n\n" .
+        "REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? '(none)') . "\n" .
+        "QUERY_STRING: " . ($_SERVER['QUERY_STRING'] ?? '(none)') . "\n" .
+        "HTTP_HOST: " . ($_SERVER['HTTP_HOST'] ?? '(none)') . "\n" .
+        "HTTPS: " . ($_SERVER['HTTPS'] ?? '(none)') . "\n" .
+        "SERVER_PROTOCOL: " . ($_SERVER['SERVER_PROTOCOL'] ?? '(none)') . "\n" .
+        "REDIRECT_STATUS: " . ($_SERVER['REDIRECT_STATUS'] ?? '(none)') . "\n" .
+        "REQUEST_METHOD: " . ($_SERVER['REQUEST_METHOD'] ?? '(none)') . "\n"
+    );
+}
+
 $config_path = __DIR__ . '/config.json';
 $config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
 if (!is_array($config_data)) {
