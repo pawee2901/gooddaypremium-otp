@@ -1,8 +1,8 @@
 {
     "shop_name": "gooddaypremium",
-    "logo_path": "/static/logo_custom_1780413642.png",
-    "disney_logo_path": "/static/logo_disney_1780413683.jpg",
-    "trueid_logo_path": "/static/logo_trueid_1780413707.jpg",
+    "logo_path": "\/static\/logo_custom_1780413642.png",
+    "disney_logo_path": "\/static\/logo_disney_1780413683.jpg",
+    "trueid_logo_path": "\/static\/logo_trueid_1780413707.jpg",
     "admin_username": "admin1",
     "admin_password": "123456789",
     "api_key_1": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
@@ -12,7 +12,7 @@
             "id": "app_disney",
             "name": "Disney+",
             "code": "DN",
-            "logo_path": "/static/logo_disney_1780413683.jpg",
+            "logo_path": "\/static\/logo_disney_1780413683.jpg",
             "keywords": "disney",
             "bg_color": "#F0F7FF",
             "border_color": "#D6E9FF",
@@ -22,7 +22,7 @@
             "id": "app_trueid",
             "name": "TrueID",
             "code": "TM",
-            "logo_path": "/static/logo_trueid_1780413707.jpg",
+            "logo_path": "\/static\/logo_trueid_1780413707.jpg",
             "keywords": "true",
             "bg_color": "#FFF5FA",
             "border_color": "#FFE2F3",
@@ -32,7 +32,7 @@
             "id": "app_1785027508",
             "name": "ChatGPT plus",
             "code": "GP",
-            "logo_path": "/static/app_logo_1785027508_793.png",
+            "logo_path": "\/static\/app_logo_1785027508_793.png",
             "keywords": "gpt",
             "bg_color": "#f0f7ff",
             "border_color": "#d6e9ff",
@@ -42,7 +42,7 @@
             "id": "app_1785052253",
             "name": "True Now",
             "code": "TN",
-            "logo_path": "/static/app_logo_1785052253_293.jpg",
+            "logo_path": "\/static\/app_logo_1785052253_293.jpg",
             "keywords": "true",
             "bg_color": "#ffe8fe",
             "border_color": "#d6e9ff",
@@ -129,6 +129,72 @@
             "password": "myvy ipkn dbpj slhd",
             "app_id": "all",
             "active": true
+        },
+        {
+            "id": "email_1785081948",
+            "email": "maxa19537@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "xils bris ifbu sqwd",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785159388",
+            "email": "mannsxadis@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "klus trbu hevo lykn",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785159592",
+            "email": "phasphxany@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "ktel npbk jxcx mmzx",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785160120",
+            "email": "chinjang44789@gmail.com",
+            "provider": "gmail",
+            "host": "imap.gmail.com",
+            "port": 993,
+            "password": "texs rgcr owxv cmzh",
+            "app_id": "all",
+            "active": true
+        },
+        {
+            "id": "email_1785208185",
+            "email": "gd-bi92c2@lico.moe",
+            "provider": "maily",
+            "host": "api.maily.space",
+            "port": 443,
+            "password": "",
+            "app_id": "all",
+            "active": true
+        }
+    ],
+    "api_providers": [
+        {
+            "id": "maily_space_1",
+            "name": "Maily Space Key 1",
+            "type": "maily",
+            "token": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
+            "active": true
+        },
+        {
+            "id": "maily_space_2",
+            "name": "Maily Space Key 2",
+            "type": "maily",
+            "token": "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5",
+            "active": true
         }
     ],
     "maily_central_accounts": [
@@ -146,22 +212,6 @@
         {
             "user": "nakl77199@gmail.com",
             "pass": "oirvaumffklalvmr"
-        }
-    ],
-    "api_providers": [
-        {
-            "id": "maily_space_1",
-            "name": "Maily Space Key 1",
-            "type": "maily",
-            "token": "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1",
-            "active": true
-        },
-        {
-            "id": "maily_space_2",
-            "name": "Maily Space Key 2",
-            "type": "maily",
-            "token": "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5",
-            "active": true
         }
     ]
 }
