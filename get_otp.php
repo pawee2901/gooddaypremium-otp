@@ -358,6 +358,60 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
     return $found;
 }
 
+// ฟังก์ชันรวม: ไล่ดึง OTP จากบัญชี Gmail ที่เกี่ยวข้องทั้งหมด (บัญชีตรงของลูกค้าเอง ถ้ามี ตามด้วยบัญชีกลางสำรอง)
+// ใช้ทั้งช่องทางลัดสำหรับอีเมล @gmail.com และช่องทาง Fallback บัญชีกลางสำหรับ Hotmail/อื่นๆ
+function run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, $lower_email) {
+    $imap_accounts_to_check = [];
+
+    if ($direct_imap_account) {
+        $direct_imap_account['__is_direct'] = true; // กล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลาง) ใช้เส้นทางไวได้
+        $imap_accounts_to_check[] = $direct_imap_account;
+    }
+
+    // เพิ่ม Gmail Central Accounts ต่อท้ายเสมอ เพื่อเป็น Fallback สำรองหาก Direct Match ล้มเหลวหรือไม่มี OTP
+    $gmail_central = [];
+    if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+        foreach ($config_data['imap_emails'] as $imap_item) {
+            if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
+                if (empty($imap_accounts_to_check) || strtolower($imap_accounts_to_check[0]['email'] ?? '') !== strtolower($imap_item['email'] ?? '')) {
+                    $gmail_central[] = $imap_item;
+                }
+            }
+        }
+    }
+    if (empty($gmail_central)) {
+        $gmail_central = [
+            ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
+            ['email' => 'phakhbona@gmail.com', 'password' => 'gtxlslpvzosnztrt', 'host' => 'imap.gmail.com', 'port' => 993]
+        ];
+    }
+    foreach ($gmail_central as $gc) {
+        $imap_accounts_to_check[] = $gc;
+    }
+
+    if (empty($imap_accounts_to_check)) {
+        return [];
+    }
+
+    $all_found = [];
+    foreach ($imap_accounts_to_check as $creds) {
+        $is_direct_account = !empty($creds['__is_direct']);
+        $account_found = scan_imap_account($creds, $is_direct_account, $app_name, $lower_email);
+        if (!empty($account_found)) {
+            $all_found = array_merge($all_found, $account_found);
+        }
+        if (!empty($all_found) && !empty($all_found[0]['otp'])) {
+            break; // พบรหัส OTP ในบัญชีนี้เรียบร้อยแล้ว ไม่จำเป็นต้องค้นหาบัญชีถัดไป
+        }
+    }
+
+    usort($all_found, function($a, $b) {
+        return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0);
+    });
+
+    return $all_found;
+}
+
 if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
     foreach ($config_data['imap_emails'] as $item) {
         if (strtolower($item['email'] ?? '') === strtolower($email)) {
@@ -406,7 +460,34 @@ if ($direct_imap_account) {
         ]);
         exit;
     }
-    // ถ้ายังไม่เจอในช่องทางลัด ปล่อยผ่านไปลองช่องทางอื่นต่อ (Maily / Cloud Run / บัญชีกลาง) เผื่อกรณีพิเศษ
+    // ถ้ายังไม่เจอในช่องทางลัด ปล่อยผ่านไปลองบัญชีกลาง Gmail อื่นๆ ต่อด้านล่าง (ไม่ต้องผ่าน Maily Space/Cloud Run เพราะเป็นอีเมล Gmail)
+}
+
+// -------------------------------------------------------------------------
+// อีเมล @gmail.com จะไม่มีทางเจอข้อมูลใน Maily Space หรือ Cloud Run เลย เพราะสองช่องทางนั้น
+// ให้บริการเฉพาะโดเมน Maily Space (@lico.moe/@rdcw.plus/@gooddaymail.com) และ Hotmail/RDCW เท่านั้น
+// จึงข้ามสองช่องทางนั้นไปอ่าน Gmail (บัญชีตรง + บัญชีกลางสำรอง) โดยตรงทันที ไม่ต้องเสียเวลารอก่อนเลย
+// -------------------------------------------------------------------------
+$is_gmail_domain = (substr($lower_email, -10) === '@gmail.com');
+
+if ($is_gmail_domain) {
+    $gmail_results = run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, $lower_email);
+
+    if (!empty($gmail_results)) {
+        echo json_encode([
+            'success'  => true,
+            'app_name' => $app_name,
+            'email'    => $email,
+            'emails'   => $gmail_results
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => false,
+        'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดของ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง หรือตรวจสอบการตั้งค่า Forwarding)"
+    ]);
+    exit;
 }
 
 $maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"];
@@ -655,86 +736,22 @@ if (!empty($cloud_run_found)) {
 
 // -------------------------------------------------------------------------
 // ช่องทาง B2: Centralized Catch-All (ดึงจาก Gmail หลักทั้งหมด) — Fallback หาก Cloud Run ไม่พบ
+// (ถึงจุดนี้ได้เฉพาะอีเมลที่ไม่ใช่ @gmail.com เช่น Hotmail ที่ไม่มี Direct Match หรือ Maily/Cloud Run หาไม่เจอ)
 // -------------------------------------------------------------------------
+$matching_mails = run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, $lower_email);
 
-    $imap_accounts_to_check = [];
-    $direct_match_found = false;
-
-    // หาว่าลูกค้ามีเมลตรงกับในระบบไหม (ลอง Direct Match ก่อน)
-    if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
-        foreach ($config_data['imap_emails'] as $imap_item) {
-            if (strtolower($imap_item['email'] ?? '') === $lower_email && !empty($imap_item['password'])) {
-                $imap_item['__is_direct'] = true; // กล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลาง) ใช้เส้นทางไวได้
-                $imap_accounts_to_check[] = $imap_item;
-                break;
-            }
-        }
-    }
-
-    // เพิ่ม Gmail Central Accounts ต่อท้ายเสมอ เพื่อเป็น Fallback สำรองหาก Direct Match ล้มเหลวหรือไม่มี OTP
-    $gmail_central = [];
-    if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
-        foreach ($config_data['imap_emails'] as $imap_item) {
-            if (strpos(strtolower($imap_item['host'] ?? ''), 'gmail.com') !== false && !empty($imap_item['password'])) {
-                if (empty($imap_accounts_to_check) || strtolower($imap_accounts_to_check[0]['email'] ?? '') !== strtolower($imap_item['email'] ?? '')) {
-                    $gmail_central[] = $imap_item;
-                }
-            }
-        }
-    }
-    if (empty($gmail_central)) {
-        $gmail_central = [
-            ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
-            ['email' => 'phakhbona@gmail.com', 'password' => 'gtxlslpvzosnztrt', 'host' => 'imap.gmail.com', 'port' => 993]
-        ];
-    }
-    foreach ($gmail_central as $gc) {
-        $imap_accounts_to_check[] = $gc;
-    }
-
-    if (empty($imap_accounts_to_check)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'ระบบยังไม่ได้ตั้งค่าบัญชีอีเมลกลางสำหรับดึงรหัสผ่าน (กรุณาให้แอดมินเพิ่มอีเมล IMAP)'
-        ]);
-        exit;
-    }
-
-    $all_found = [];
-
-    // วนลูปเช็คทีละบัญชี (ใช้ฟังก์ชันร่วม scan_imap_account() ตัวเดียวกับช่องทางลัดด้านบน)
-    foreach ($imap_accounts_to_check as $creds) {
-        $is_direct_account = !empty($creds['__is_direct']);
-        $account_found = scan_imap_account($creds, $is_direct_account, $app_name, $lower_email);
-        if (!empty($account_found)) {
-            $all_found = array_merge($all_found, $account_found);
-        }
-
-        // หากพบรหัส OTP ในบัญชีนี้เรียบร้อยแล้ว ไม่จำเป็นต้องค้นหาบัญชีถัดไป
-        if (!empty($all_found) && !empty($all_found[0]['otp'])) {
-            break;
-        }
-    }
-
-    // เรียงจดหมายที่พบทั้งหมดตามเวลาล่าสุดจริงๆ (timestamp จากมากไปน้อย)
-    usort($all_found, function($a, $b) {
-        return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0);
-    });
-
-    $matching_mails = $all_found;
-
-    if (empty($matching_mails)) {
-        echo json_encode([
-            'success' => false,
-            'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดของ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง หรือตรวจสอบการตั้งค่า Forwarding)"
-        ]);
-        exit;
-    }
-
+if (empty($matching_mails)) {
     echo json_encode([
-        'success'  => true,
-        'app_name' => $app_name,
-        'email'    => $email,
-        'emails'   => $matching_mails
+        'success' => false,
+        'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดของ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง หรือตรวจสอบการตั้งค่า Forwarding)"
     ]);
     exit;
+}
+
+echo json_encode([
+    'success'  => true,
+    'app_name' => $app_name,
+    'email'    => $email,
+    'emails'   => $matching_mails
+]);
+exit;
