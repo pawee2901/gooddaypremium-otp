@@ -252,6 +252,112 @@ function imap_extract_body($imap_conn, $msgno) {
     return $result;
 }
 
+// ฟังก์ชันดึง OTP จากบัญชี IMAP บัญชีเดียว (ใช้ทั้งช่องทางลัด Direct Account และ Fallback บัญชีกลาง)
+// $is_direct_account = true หมายถึงกล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลางที่มีหลายคนใช้ปนกัน)
+function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) {
+    $imap_host = $creds['host'] ?? 'imap.gmail.com';
+    $imap_port = intval($creds['port'] ?? 993);
+    $imap_user = $creds['email'];
+    $imap_pass = $creds['password'];
+
+    // จำกัดเวลาเชื่อมต่อ/อ่านข้อมูลต่อบัญชี ไม่ให้บัญชีที่เชื่อมต่อช้าหรือใช้งานไม่ได้ทำให้การค้นหาทั้งหมดค้างนาน
+    @imap_timeout(IMAP_OPENTIMEOUT, 5);
+    @imap_timeout(IMAP_READTIMEOUT, 5);
+
+    $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
+    $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
+    if (!$imap_conn) {
+        return [];
+    }
+
+    $found = [];
+
+    // กล่องเมลของลูกค้าเอง (Direct) ไม่ใช่บัญชีกลางที่มีเมลหลายคนปนกัน รหัส OTP ที่เพิ่งขอมาจะอยู่บนสุดของกล่องเสมอ
+    // จึงสแกนแค่ 5 ฉบับล่าสุดพอ (เร็วกว่าสแกน 30 ฉบับแบบบัญชีกลางมาก) ส่วนบัญชีกลางยังคงสแกนลึก 30 ฉบับเหมือนเดิมเพื่อความถูกต้อง
+    $scan_depth = $is_direct_account ? 5 : 30;
+
+    $num_msg = @imap_num_msg($imap_conn);
+    if ($num_msg > 0) {
+        $start_msg = max(1, $num_msg - ($scan_depth - 1));
+
+        // ดึง header ของทุกฉบับในช่วงที่สนใจมาในคำสั่งเดียว (เร็วกว่าการวนขอทีละฉบับแบบเดิมมาก
+        // เพราะ imap_headerinfo() แบบเดิมต้องยิงคำสั่งแยกไปเซิร์ฟเวอร์ทีละฉบับ)
+        $overviews = @imap_fetch_overview($imap_conn, "$start_msg:$num_msg");
+        if ($overviews) {
+            usort($overviews, function($a, $b) { return ($b->msgno ?? 0) - ($a->msgno ?? 0); }); // ใหม่สุดก่อน
+
+            foreach ($overviews as $ov) {
+                $msgno = isset($ov->msgno) ? (int)$ov->msgno : 0;
+                if (!$msgno) continue;
+
+                $from_email = $ov->from ?? '';
+                $to_email = $ov->to ?? '';
+                $subject = isset($ov->subject) ? @imap_utf8($ov->subject) : '';
+
+                // ตรวจสอบอายุจดหมาย - ถ้าส่งมาเกิน 2 ชั่วโมง ให้ข้ามทันที
+                $udate = isset($ov->udate) ? intval($ov->udate) : (isset($ov->date) ? (strtotime($ov->date) ?: time()) : time());
+                if ((time() - $udate) > 7200) {
+                    continue;
+                }
+
+                $body = null;
+                $full_text = '';
+
+                if ($is_direct_account) {
+                    // กล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลาง Forwarding) — ทุกฉบับในนี้เป็นของลูกค้าอยู่แล้ว
+                    // เช็คจาก header (from/subject) ก่อนว่าตรงกับแอปที่เลือกไหม เพื่อข้ามการดึง body
+                    // ของฉบับที่ไม่เกี่ยวข้องไปเลย (เร็วขึ้นมากเมื่อเทียบกับการดึง body ทุกฉบับแบบเดิม)
+                    if (!matches_app($from_email, $subject, $app_name, '')) {
+                        continue;
+                    }
+
+                    $mail_content = imap_extract_body($imap_conn, $msgno);
+                    $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
+                    $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
+                } else {
+                    // บัญชีกลาง (Gmail Forwarding Central) — อีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
+                    // ไม่ใช่ใน header To: ตรงๆ จึงต้องดึง body มาค้นหาเสมอ (พฤติกรรมเดิม คงไว้เพื่อความถูกต้อง)
+                    $mail_content = imap_extract_body($imap_conn, $msgno);
+                    $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
+                    $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
+
+                    if (strpos($full_text, $lower_email) === false) {
+                        continue;
+                    }
+                    if (!matches_app($from_email, $subject, $app_name, $full_text)) {
+                        continue;
+                    }
+                }
+
+                // แปลงเป็นเวลาไทย (Asia/Bangkok) อย่างชัดเจน แทนการพึ่ง timezone เริ่มต้นของเซิร์ฟเวอร์ (มักตั้งเป็น UTC ทำให้เวลาที่แสดงคลาดเคลื่อน 7 ชั่วโมง)
+                $dt_thai = new DateTime('@' . $udate);
+                $dt_thai->setTimezone(new DateTimeZone('Asia/Bangkok'));
+                $thai_time = $dt_thai->format('d/m/') . ((int)$dt_thai->format('Y') + 543) . ' ' . $dt_thai->format('H:i') . ' น.';
+
+                $otp_code = extract_otp_code($body) ?? '';
+                $ref_code  = extract_ref_code($body) ?? '';
+
+                $found[] = [
+                    'subject'   => $subject ?: 'ไม่มีหัวข้อ',
+                    'from'      => $from_email,
+                    'time'      => $thai_time,
+                    'timestamp' => $udate,
+                    'otp'       => $otp_code,
+                    'ref'       => $ref_code,
+                    'html_body' => $body
+                ];
+
+                // หากพบรหัส OTP แล้ว ให้หยุดอ่านฉบับถัดไปทันที
+                if (!empty($otp_code)) {
+                    break;
+                }
+            }
+        }
+    }
+    @imap_close($imap_conn);
+    return $found;
+}
+
 if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
     foreach ($config_data['imap_emails'] as $item) {
         if (strtolower($item['email'] ?? '') === strtolower($email)) {
@@ -270,6 +376,39 @@ if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails']))
 // 3. จัดการการดึงข้อมูลตามประเภทของอีเมล (Maily Space API & Central Accounts)
 // =========================================================================
 $lower_email = strtolower($email);
+
+// -------------------------------------------------------------------------
+// ช่องทางลัด: ถ้าอีเมลนี้ถูกลงทะเบียนเป็นบัญชี IMAP ตรงในระบบอยู่แล้ว (ไม่ใช่ผ่าน Maily) ให้ดึงจาก IMAP บัญชีนั้นทันที
+// ข้าม Maily Space และ Cloud Run ไปเลย เพราะรู้แน่ชัดอยู่แล้วว่าต้องอ่านจากบัญชีไหน ไม่ต้องเสียเวลารอทั้งสองช่องทางนั้นก่อน
+// (แต่ก่อนแม้จะเป็นอีเมล Gmail ที่ลงทะเบียนไว้ตรงๆ ก็ยังต้องรอ Maily Space + Cloud Run ก่อนเสมอ ทำให้ช้าโดยไม่จำเป็น)
+// -------------------------------------------------------------------------
+$direct_imap_account = null;
+if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+    foreach ($config_data['imap_emails'] as $imap_item) {
+        if (strtolower($imap_item['email'] ?? '') === $lower_email
+            && !empty($imap_item['password'])
+            && ($imap_item['provider'] ?? '') !== 'maily') {
+            $direct_imap_account = $imap_item;
+            break;
+        }
+    }
+}
+
+if ($direct_imap_account) {
+    $direct_found = scan_imap_account($direct_imap_account, true, $app_name, $lower_email);
+    if (!empty($direct_found)) {
+        usort($direct_found, function($a, $b) { return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0); });
+        echo json_encode([
+            'success'  => true,
+            'app_name' => $app_name,
+            'email'    => $email,
+            'emails'   => $direct_found
+        ]);
+        exit;
+    }
+    // ถ้ายังไม่เจอในช่องทางลัด ปล่อยผ่านไปลองช่องทางอื่นต่อ (Maily / Cloud Run / บัญชีกลาง) เผื่อกรณีพิเศษ
+}
+
 $maily_domains = ["@lico.moe", "@rdcw.plus", "@gooddaymail.com"];
 $is_maily_domain = false;
 
@@ -563,108 +702,13 @@ if (!empty($cloud_run_found)) {
 
     $all_found = [];
 
-    // วนลูปเช็คทีละบัญชี
+    // วนลูปเช็คทีละบัญชี (ใช้ฟังก์ชันร่วม scan_imap_account() ตัวเดียวกับช่องทางลัดด้านบน)
     foreach ($imap_accounts_to_check as $creds) {
-        $imap_host = $creds['host'] ?? 'imap.gmail.com';
-        $imap_port = intval($creds['port'] ?? 993);
-        $imap_user = $creds['email'];
-        $imap_pass = $creds['password'];
         $is_direct_account = !empty($creds['__is_direct']);
-
-        // จำกัดเวลาเชื่อมต่อ/อ่านข้อมูลต่อบัญชี ไม่ให้บัญชีที่เชื่อมต่อช้าหรือใช้งานไม่ได้ทำให้การค้นหาทั้งหมดค้างนาน
-        @imap_timeout(IMAP_OPENTIMEOUT, 5);
-        @imap_timeout(IMAP_READTIMEOUT, 5);
-
-        $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
-        $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
-
-        if (!$imap_conn) {
-            continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
+        $account_found = scan_imap_account($creds, $is_direct_account, $app_name, $lower_email);
+        if (!empty($account_found)) {
+            $all_found = array_merge($all_found, $account_found);
         }
-
-        // กล่องเมลของลูกค้าเอง (Direct) ไม่ใช่บัญชีกลางที่มีเมลหลายคนปนกัน รหัส OTP ที่เพิ่งขอมาจะอยู่บนสุดของกล่องเสมอ
-        // จึงสแกนแค่ 5 ฉบับล่าสุดพอ (เร็วกว่าสแกน 30 ฉบับแบบบัญชีกลางมาก) ส่วนบัญชีกลางยังคงสแกนลึก 30 ฉบับเหมือนเดิมเพื่อความถูกต้อง
-        $scan_depth = $is_direct_account ? 5 : 30;
-
-        $num_msg = @imap_num_msg($imap_conn);
-        if ($num_msg > 0) {
-            $start_msg = max(1, $num_msg - ($scan_depth - 1));
-
-            // ดึง header ของทุกฉบับในช่วงที่สนใจมาในคำสั่งเดียว (เร็วกว่าการวนขอทีละฉบับแบบเดิมมาก
-            // เพราะ imap_headerinfo() แบบเดิมต้องยิงคำสั่งแยกไปเซิร์ฟเวอร์ทีละฉบับ)
-            $overviews = @imap_fetch_overview($imap_conn, "$start_msg:$num_msg");
-            if ($overviews) {
-                usort($overviews, function($a, $b) { return ($b->msgno ?? 0) - ($a->msgno ?? 0); }); // ใหม่สุดก่อน
-
-                foreach ($overviews as $ov) {
-                    $msgno = isset($ov->msgno) ? (int)$ov->msgno : 0;
-                    if (!$msgno) continue;
-
-                    $from_email = $ov->from ?? '';
-                    $to_email = $ov->to ?? '';
-                    $subject = isset($ov->subject) ? @imap_utf8($ov->subject) : '';
-
-                    // ตรวจสอบอายุจดหมาย - ถ้าส่งมาเกิน 2 ชั่วโมง ให้ข้ามทันที
-                    $udate = isset($ov->udate) ? intval($ov->udate) : (isset($ov->date) ? (strtotime($ov->date) ?: time()) : time());
-                    if ((time() - $udate) > 7200) {
-                        continue;
-                    }
-
-                    $body = null;
-                    $full_text = '';
-
-                    if ($is_direct_account) {
-                        // กล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลาง Forwarding) — ทุกฉบับในนี้เป็นของลูกค้าอยู่แล้ว
-                        // เช็คจาก header (from/subject) ก่อนว่าตรงกับแอปที่เลือกไหม เพื่อข้ามการดึง body
-                        // ของฉบับที่ไม่เกี่ยวข้องไปเลย (เร็วขึ้นมากเมื่อเทียบกับการดึง body ทุกฉบับแบบเดิม)
-                        if (!matches_app($from_email, $subject, $app_name, '')) {
-                            continue;
-                        }
-
-                        $mail_content = imap_extract_body($imap_conn, $msgno);
-                        $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
-                        $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
-                    } else {
-                        // บัญชีกลาง (Gmail Forwarding Central) — อีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
-                        // ไม่ใช่ใน header To: ตรงๆ จึงต้องดึง body มาค้นหาเสมอ (พฤติกรรมเดิม คงไว้เพื่อความถูกต้อง)
-                        $mail_content = imap_extract_body($imap_conn, $msgno);
-                        $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
-                        $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
-
-                        if (strpos($full_text, $lower_email) === false) {
-                            continue;
-                        }
-                        if (!matches_app($from_email, $subject, $app_name, $full_text)) {
-                            continue;
-                        }
-                    }
-
-                    // แปลงเป็นเวลาไทย (Asia/Bangkok) อย่างชัดเจน แทนการพึ่ง timezone เริ่มต้นของเซิร์ฟเวอร์ (มักตั้งเป็น UTC ทำให้เวลาที่แสดงคลาดเคลื่อน 7 ชั่วโมง)
-                    $dt_thai = new DateTime('@' . $udate);
-                    $dt_thai->setTimezone(new DateTimeZone('Asia/Bangkok'));
-                    $thai_time = $dt_thai->format('d/m/') . ((int)$dt_thai->format('Y') + 543) . ' ' . $dt_thai->format('H:i') . ' น.';
-
-                    $otp_code = extract_otp_code($body) ?? '';
-                    $ref_code  = extract_ref_code($body) ?? '';
-
-                    $all_found[] = [
-                        'subject'   => $subject ?: 'ไม่มีหัวข้อ',
-                        'from'      => $from_email,
-                        'time'      => $thai_time,
-                        'timestamp' => $udate,
-                        'otp'       => $otp_code,
-                        'ref'       => $ref_code,
-                        'html_body' => $body
-                    ];
-
-                    // หากพบรหัส OTP แล้ว ให้หยุดอ่านฉบับถัดไปทันที
-                    if (!empty($otp_code)) {
-                        break;
-                    }
-                }
-            }
-        }
-        @imap_close($imap_conn);
 
         // หากพบรหัส OTP ในบัญชีนี้เรียบร้อยแล้ว ไม่จำเป็นต้องค้นหาบัญชีถัดไป
         if (!empty($all_found) && !empty($all_found[0]['otp'])) {
