@@ -525,6 +525,7 @@ if (!empty($cloud_run_found)) {
     if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
         foreach ($config_data['imap_emails'] as $imap_item) {
             if (strtolower($imap_item['email'] ?? '') === $lower_email && !empty($imap_item['password'])) {
+                $imap_item['__is_direct'] = true; // กล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลาง) ใช้เส้นทางไวได้
                 $imap_accounts_to_check[] = $imap_item;
                 break;
             }
@@ -568,6 +569,7 @@ if (!empty($cloud_run_found)) {
         $imap_port = intval($creds['port'] ?? 993);
         $imap_user = $creds['email'];
         $imap_pass = $creds['password'];
+        $is_direct_account = !empty($creds['__is_direct']);
 
         $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
         $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
@@ -576,64 +578,82 @@ if (!empty($cloud_run_found)) {
             continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
         }
 
-        // ค้นหาจาก 30 อีเมลล่าสุดโดยเช็คเฉพาะ Header ก่อนเพื่อความรวดเร็วและไม่พลาดจดหมายที่ส่งต่อ
+        // ค้นหาจาก 30 อีเมลล่าสุด
         $num_msg = @imap_num_msg($imap_conn);
         if ($num_msg > 0) {
             $start_msg = max(1, $num_msg - 29); // สแกนลึก 30 ฉบับล่าสุดในกล่องกลาง
-            
-            for ($msgno = $num_msg; $msgno >= $start_msg; $msgno--) {
-                $header = @imap_headerinfo($imap_conn, $msgno);
-                if (!$header) continue;
 
-                $from_obj = isset($header->from[0]) ? $header->from[0] : null;
-                $from_email = $from_obj ? ($from_obj->mailbox . '@' . $from_obj->host) : '';
-                
-                $to_obj = isset($header->to[0]) ? $header->to[0] : null;
-                $to_email = $to_obj ? ($to_obj->mailbox . '@' . $to_obj->host) : '';
+            // ดึง header ของทุกฉบับในช่วงที่สนใจมาในคำสั่งเดียว (เร็วกว่าการวนขอทีละฉบับแบบเดิมมาก
+            // เพราะ imap_headerinfo() แบบเดิมต้องยิงคำสั่งแยกไปเซิร์ฟเวอร์ทีละฉบับ)
+            $overviews = @imap_fetch_overview($imap_conn, "$start_msg:$num_msg");
+            if ($overviews) {
+                usort($overviews, function($a, $b) { return ($b->msgno ?? 0) - ($a->msgno ?? 0); }); // ใหม่สุดก่อน
 
-                $subject = isset($header->subject) ? @imap_utf8($header->subject) : '';
+                foreach ($overviews as $ov) {
+                    $msgno = isset($ov->msgno) ? (int)$ov->msgno : 0;
+                    if (!$msgno) continue;
 
-                // ตรวจสอบอายุจดหมาย - ถ้าส่งมาเกิน 2 ชั่วโมง ให้ข้ามทันที
-                $udate = isset($header->udate) ? intval($header->udate) : (strtotime($header->date ?? '') ?: time());
-                if ((time() - $udate) > 7200) {
-                    continue;
-                }
+                    $from_email = $ov->from ?? '';
+                    $to_email = $ov->to ?? '';
+                    $subject = isset($ov->subject) ? @imap_utf8($ov->subject) : '';
 
-                // ดึง body เฉพาะฉบับที่เวลาผ่านการกรอง (แกะโครงสร้าง MIME จริงเพื่อให้ได้ HTML/Plain ที่ decode แล้ว
-                // ไม่ใช่ MIME source ดิบที่ยังไม่ถอดรหัส base64/quoted-printable)
-                $mail_content = imap_extract_body($imap_conn, $msgno);
-                $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
+                    // ตรวจสอบอายุจดหมาย - ถ้าส่งมาเกิน 2 ชั่วโมง ให้ข้ามทันที
+                    $udate = isset($ov->udate) ? intval($ov->udate) : (isset($ov->date) ? (strtotime($ov->date) ?: time()) : time());
+                    if ((time() - $udate) > 7200) {
+                        continue;
+                    }
 
-                $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
+                    $body = null;
+                    $full_text = '';
 
-                // ตรวจสอบว่าเกี่ยวข้องกับ target email ของลูกค้าหรือไม่
-                $is_target = (strtolower($to_email) === $lower_email || strpos($full_text, $lower_email) !== false);
-                if (!$is_target) continue;
+                    if ($is_direct_account) {
+                        // กล่องเมลของลูกค้าเอง (ไม่ใช่บัญชีกลาง Forwarding) — ทุกฉบับในนี้เป็นของลูกค้าอยู่แล้ว
+                        // เช็คจาก header (from/subject) ก่อนว่าตรงกับแอปที่เลือกไหม เพื่อข้ามการดึง body
+                        // ของฉบับที่ไม่เกี่ยวข้องไปเลย (เร็วขึ้นมากเมื่อเทียบกับการดึง body ทุกฉบับแบบเดิม)
+                        if (!matches_app($from_email, $subject, $app_name, '')) {
+                            continue;
+                        }
 
-                // กรองแอป (Netflix, Disney, True, OpenAI/ChatGPT etc)
-                if (!matches_app($from_email, $subject, $app_name, $full_text)) continue;
+                        $mail_content = imap_extract_body($imap_conn, $msgno);
+                        $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
+                        $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
+                    } else {
+                        // บัญชีกลาง (Gmail Forwarding Central) — อีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
+                        // ไม่ใช่ใน header To: ตรงๆ จึงต้องดึง body มาค้นหาเสมอ (พฤติกรรมเดิม คงไว้เพื่อความถูกต้อง)
+                        $mail_content = imap_extract_body($imap_conn, $msgno);
+                        $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
+                        $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
 
-                // แปลงเป็นเวลาไทย (Asia/Bangkok) อย่างชัดเจน แทนการพึ่ง timezone เริ่มต้นของเซิร์ฟเวอร์ (มักตั้งเป็น UTC ทำให้เวลาที่แสดงคลาดเคลื่อน 7 ชั่วโมง)
-                $dt_thai = new DateTime('@' . $udate);
-                $dt_thai->setTimezone(new DateTimeZone('Asia/Bangkok'));
-                $thai_time = $dt_thai->format('d/m/') . ((int)$dt_thai->format('Y') + 543) . ' ' . $dt_thai->format('H:i') . ' น.';
+                        if (strpos($full_text, $lower_email) === false) {
+                            continue;
+                        }
+                        if (!matches_app($from_email, $subject, $app_name, $full_text)) {
+                            continue;
+                        }
+                    }
 
-                $otp_code = extract_otp_code($body) ?? '';
-                $ref_code  = extract_ref_code($body) ?? '';
+                    // แปลงเป็นเวลาไทย (Asia/Bangkok) อย่างชัดเจน แทนการพึ่ง timezone เริ่มต้นของเซิร์ฟเวอร์ (มักตั้งเป็น UTC ทำให้เวลาที่แสดงคลาดเคลื่อน 7 ชั่วโมง)
+                    $dt_thai = new DateTime('@' . $udate);
+                    $dt_thai->setTimezone(new DateTimeZone('Asia/Bangkok'));
+                    $thai_time = $dt_thai->format('d/m/') . ((int)$dt_thai->format('Y') + 543) . ' ' . $dt_thai->format('H:i') . ' น.';
 
-                $all_found[] = [
-                    'subject'   => $subject ?: 'ไม่มีหัวข้อ',
-                    'from'      => $from_email,
-                    'time'      => $thai_time,
-                    'timestamp' => $udate,
-                    'otp'       => $otp_code,
-                    'ref'       => $ref_code,
-                    'html_body' => $body
-                ];
+                    $otp_code = extract_otp_code($body) ?? '';
+                    $ref_code  = extract_ref_code($body) ?? '';
 
-                // หากพบรหัส OTP แล้ว ให้หยุดอ่านฉบับถัดไปทันที
-                if (!empty($otp_code)) {
-                    break;
+                    $all_found[] = [
+                        'subject'   => $subject ?: 'ไม่มีหัวข้อ',
+                        'from'      => $from_email,
+                        'time'      => $thai_time,
+                        'timestamp' => $udate,
+                        'otp'       => $otp_code,
+                        'ref'       => $ref_code,
+                        'html_body' => $body
+                    ];
+
+                    // หากพบรหัส OTP แล้ว ให้หยุดอ่านฉบับถัดไปทันที
+                    if (!empty($otp_code)) {
+                        break;
+                    }
                 }
             }
         }
