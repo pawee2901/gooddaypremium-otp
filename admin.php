@@ -739,7 +739,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                 </div>
 
                 <!-- Search Box (ช่องค้นหาอีเมล) -->
-                <?php $imap_emails = isset($config['imap_emails']) ? $config['imap_emails'] : []; ?>
+                <?php
+                    $imap_emails_all = isset($config['imap_emails']) ? $config['imap_emails'] : [];
+                    // แสดงเฉพาะบัญชี Gmail ในกล่องนี้ ส่วนบัญชี Hotmail/Outlook (Microsoft Graph) แยกไปแสดงในกล่องด้านล่าง
+                    $imap_emails = array_values(array_filter($imap_emails_all, function ($item) {
+                        return ($item['provider'] ?? '') !== 'microsoft_graph';
+                    }));
+                ?>
                 <div class="flex items-center justify-between gap-3 bg-gray-50/70 border border-gray-200/80 rounded-2xl p-2.5 sm:px-4">
                     <div class="flex items-center gap-2.5 flex-1">
                         <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
@@ -772,51 +778,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     <div class="col-span-full text-center py-10 text-gray-400 text-xs font-medium">
                         ยังไม่มีรายการอีเมล IMAP ในระบบ กดปุ่ม "+ เพิ่มอีเมล" เพื่อเริ่มต้นใช้งาน
                     </div>
-                    <?php else: foreach ($imap_emails as $item): 
+                    <?php else: foreach ($imap_emails as $item):
                         $is_active = isset($item['active']) ? (bool)$item['active'] : true;
                     ?>
-                    <div class="email-card border rounded-2xl p-3.5 sm:p-4 flex flex-col xs:flex-row xs:items-center justify-between gap-3 shadow-xs transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60 hover:border-emerald-300' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>" data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>">
-                        <div class="flex items-center gap-3 min-w-0 w-full xs:w-auto">
-                            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-base sm:text-lg flex-shrink-0 <?php echo $is_active ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' : 'bg-rose-100 border border-rose-200 text-rose-700'; ?>">
-                                <i class="fa-regular fa-envelope"></i>
-                            </div>
-                            <div class="min-w-0 flex-1 space-y-0.5">
-                                <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></h3>
-                                <p class="text-[10px] text-gray-400 truncate">
-                                    <?php if (($item['provider'] ?? '') === 'microsoft_graph'): ?>
-                                        <i class="fa-brands fa-microsoft"></i> เชื่อมต่อผ่าน Microsoft Graph API (OAuth)
-                                    <?php else: ?>
-                                        <?php echo htmlspecialchars($item['host'] ?? 'imap.gmail.com'); ?>:<?php echo htmlspecialchars($item['port'] ?? 993); ?> &middot; <?php echo !empty($item['password']) ? 'pass: ••••••••' : 'no pass'; ?>
-                                    <?php endif; ?>
-                                </p>
-                                <div class="pt-0.5 flex items-center gap-1.5">
-                                    <?php if ($is_active): ?>
-                                    <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-[9px] font-bold px-2 py-0.5 rounded-md">
-                                        <i class="fa-solid fa-circle-check text-[8px]"></i> พร้อมใช้งาน (เปิด)
-                                    </span>
-                                    <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 bg-rose-100 text-rose-700 text-[9px] font-bold px-2 py-0.5 rounded-md">
-                                        <i class="fa-solid fa-lock text-[8px]"></i> ถูกล็อกไว้ (ปิดใช้งาน)
-                                    </span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
+                    <div class="email-card border rounded-xl p-3 flex items-center justify-between gap-2 transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>" data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i class="fa-regular fa-envelope <?php echo $is_active ? 'text-emerald-600' : 'text-rose-600'; ?>"></i>
+                            <span class="text-xs font-bold text-gray-800 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></span>
                         </div>
-                        <div class="flex items-center justify-between xs:justify-end gap-2.5 w-full xs:w-auto border-t xs:border-t-0 pt-2 xs:pt-0 border-gray-200/50 flex-shrink-0">
-                            <span class="text-[10px] font-bold text-gray-400 block xs:hidden">สถานะอีเมล:</span>
-                            <div class="flex items-center gap-2">
-                                <label class="relative inline-flex items-center cursor-pointer" title="<?php echo $is_active ? 'คลิกเพื่อล็อกอีเมลนี้' : 'คลิกเพื่อปลดล็อกอีเมลนี้'; ?>">
-                                    <input type="checkbox" <?php echo $is_active ? 'checked' : ''; ?> 
-                                           onchange="toggleEmailActive('<?php echo htmlspecialchars($item['id']); ?>', this.checked)" 
-                                           class="sr-only peer">
-                                    <div class="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
-
-                                <button onclick="deleteEmail('<?php echo htmlspecialchars($item['id']); ?>')" title="ลบอีเมลนี้" 
-                                        class="w-8 h-8 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all active:scale-95">
-                                    <i class="fa-regular fa-trash-can text-sm"></i>
-                                </button>
-                            </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <label class="relative inline-flex items-center cursor-pointer" title="<?php echo $is_active ? 'คลิกเพื่อล็อกอีเมลนี้' : 'คลิกเพื่อปลดล็อกอีเมลนี้'; ?>">
+                                <input type="checkbox" <?php echo $is_active ? 'checked' : ''; ?>
+                                       onchange="toggleEmailActive('<?php echo htmlspecialchars($item['id']); ?>', this.checked)"
+                                       class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                            <button onclick="deleteEmail('<?php echo htmlspecialchars($item['id']); ?>')" title="ลบอีเมลนี้"
+                                    class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
+                                <i class="fa-regular fa-trash-can text-xs"></i>
+                            </button>
                         </div>
                     </div>
                     <?php endforeach; endif; ?>
@@ -880,10 +860,33 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
 
                 <?php if (!empty($ms_accounts)): ?>
                 <div class="space-y-2 pt-3 border-t border-gray-100">
-                    <p class="text-xs font-bold text-gray-700">บัญชีที่เชื่อมต่อแล้ว (<?php echo count($ms_accounts); ?>)</p>
+                    <div class="flex items-center justify-between gap-3 bg-gray-50/70 border border-gray-200/80 rounded-2xl p-2.5 sm:px-4">
+                        <div class="flex items-center gap-2.5 flex-1">
+                            <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                            <input type="text"
+                                   id="msEmailSearchInput"
+                                   oninput="filterMsEmailList(this.value)"
+                                   placeholder="พิมพ์ค้นหาอีเมล Hotmail/Outlook..."
+                                   class="w-full bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none placeholder-gray-400 font-medium">
+                            <button type="button"
+                                    id="clearMsEmailSearchBtn"
+                                    onclick="clearMsEmailSearch()"
+                                    class="hidden text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded-full hover:bg-gray-200/60 transition-all">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <span id="msEmailSearchCount" class="text-[11px] font-bold text-gray-400 whitespace-nowrap bg-white px-2.5 py-1 rounded-xl border border-gray-100 shadow-xs">
+                            <?php echo count($ms_accounts); ?> รายการ
+                        </span>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div id="noMsEmailSearchResult" class="hidden col-span-full text-center py-6 text-gray-400 text-xs font-medium">
+                            <i class="fa-solid fa-magnifying-glass text-gray-300 text-xl mb-1 block"></i>
+                            ไม่พบอีเมลที่ตรงกับคำค้นหา
+                        </div>
                         <?php foreach ($ms_accounts as $ms_acc): $ms_active = isset($ms_acc['active']) ? (bool)$ms_acc['active'] : true; ?>
-                        <div class="border rounded-xl p-3 flex items-center justify-between gap-2 <?php echo $ms_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60'; ?>">
+                        <div class="ms-email-card border rounded-xl p-3 flex items-center justify-between gap-2 <?php echo $ms_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60'; ?>" data-email="<?php echo htmlspecialchars(strtolower($ms_acc['email'])); ?>">
                             <div class="flex items-center gap-2 min-w-0">
                                 <i class="fa-brands fa-microsoft text-blue-600"></i>
                                 <span class="text-xs font-bold text-gray-800 truncate"><?php echo htmlspecialchars($ms_acc['email']); ?></span>
@@ -1738,6 +1741,53 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             if (input) {
                 input.value = '';
                 filterEmailList('');
+            }
+        }
+
+        function filterMsEmailList(query) {
+            const cleanQuery = query.trim().toLowerCase();
+            const cards = document.querySelectorAll('.ms-email-card');
+            const clearBtn = document.getElementById('clearMsEmailSearchBtn');
+            const countEl = document.getElementById('msEmailSearchCount');
+            const noResultEl = document.getElementById('noMsEmailSearchResult');
+
+            if (clearBtn) {
+                if (cleanQuery.length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            }
+
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const email = card.getAttribute('data-email') || '';
+                if (!cleanQuery || email.includes(cleanQuery)) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            if (countEl) {
+                countEl.innerText = `${visibleCount} รายการ`;
+            }
+
+            if (noResultEl) {
+                if (visibleCount === 0 && cards.length > 0) {
+                    noResultEl.classList.remove('hidden');
+                } else {
+                    noResultEl.classList.add('hidden');
+                }
+            }
+        }
+
+        function clearMsEmailSearch() {
+            const input = document.getElementById('msEmailSearchInput');
+            if (input) {
+                input.value = '';
+                filterMsEmailList('');
             }
         }
     </script>
