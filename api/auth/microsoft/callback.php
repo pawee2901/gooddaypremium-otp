@@ -35,7 +35,8 @@ if (empty($client_id) || empty($client_secret)) {
 $state = $_GET['state'] ?? '';
 $state_parts = explode('.', $state, 2);
 if (count($state_parts) !== 2) {
-    redirect_with_error('state ไม่ถูกต้อง กรุณาลองเชื่อมต่อใหม่อีกครั้ง');
+    // DEBUG ชั่วคราว: โชว์ค่า state ที่ได้รับจริงเพื่อหาสาเหตุ (ลบออกทีหลังเมื่อแก้เสร็จ)
+    redirect_with_error('state ไม่ถูกต้อง (debug: len=' . strlen($state) . ' raw=' . substr($state, 0, 80) . ' all_get_keys=' . implode(',', array_keys($_GET)) . ')');
 }
 list($ms_nonce, $ms_sig) = $state_parts;
 $expected_sig = hash_hmac('sha256', $ms_nonce, $client_secret);
