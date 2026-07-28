@@ -503,7 +503,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
         'redirect_uri'  => $ms_redirect_uri,
         'response_mode' => 'query',
         'scope'         => 'offline_access Mail.Read openid profile email',
-        'state'         => $ms_state
+        'state'         => $ms_state,
+        'prompt'        => 'select_account' // บังคับให้ Microsoft โชว์หน้าเลือกบัญชีทุกครั้ง ไม่ auto-login ด้วยบัญชีเดิมที่เพิ่งล็อกอินไว้
     ]);
 
     header('Location: ' . $ms_auth_url);
