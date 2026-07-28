@@ -571,6 +571,10 @@ if (!empty($cloud_run_found)) {
         $imap_pass = $creds['password'];
         $is_direct_account = !empty($creds['__is_direct']);
 
+        // จำกัดเวลาเชื่อมต่อ/อ่านข้อมูลต่อบัญชี ไม่ให้บัญชีที่เชื่อมต่อช้าหรือใช้งานไม่ได้ทำให้การค้นหาทั้งหมดค้างนาน
+        @imap_timeout(IMAP_OPENTIMEOUT, 5);
+        @imap_timeout(IMAP_READTIMEOUT, 5);
+
         $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
         $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
 
@@ -578,10 +582,13 @@ if (!empty($cloud_run_found)) {
             continue; // ข้ามไปเช็กเมลต่อไปถ้าต่อไม่ได้
         }
 
-        // ค้นหาจาก 30 อีเมลล่าสุด
+        // กล่องเมลของลูกค้าเอง (Direct) ไม่ใช่บัญชีกลางที่มีเมลหลายคนปนกัน รหัส OTP ที่เพิ่งขอมาจะอยู่บนสุดของกล่องเสมอ
+        // จึงสแกนแค่ 5 ฉบับล่าสุดพอ (เร็วกว่าสแกน 30 ฉบับแบบบัญชีกลางมาก) ส่วนบัญชีกลางยังคงสแกนลึก 30 ฉบับเหมือนเดิมเพื่อความถูกต้อง
+        $scan_depth = $is_direct_account ? 5 : 30;
+
         $num_msg = @imap_num_msg($imap_conn);
         if ($num_msg > 0) {
-            $start_msg = max(1, $num_msg - 29); // สแกนลึก 30 ฉบับล่าสุดในกล่องกลาง
+            $start_msg = max(1, $num_msg - ($scan_depth - 1));
 
             // ดึง header ของทุกฉบับในช่วงที่สนใจมาในคำสั่งเดียว (เร็วกว่าการวนขอทีละฉบับแบบเดิมมาก
             // เพราะ imap_headerinfo() แบบเดิมต้องยิงคำสั่งแยกไปเซิร์ฟเวอร์ทีละฉบับ)
