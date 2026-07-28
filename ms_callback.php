@@ -104,7 +104,8 @@ $me_http_code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
 curl_close($ch2);
 
 if ($me_http_code !== 200 || !$me_res) {
-    redirect_with_error('ดึงข้อมูลบัญชีจาก Microsoft ไม่สำเร็จ');
+    // DEBUG ชั่วคราว: โชว์ HTTP code และเนื้อหา error จริงจาก Graph API (ลบออกทีหลังเมื่อแก้เสร็จ)
+    redirect_with_error('ดึงข้อมูลบัญชีจาก Microsoft ไม่สำเร็จ (debug: http=' . $me_http_code . ' body=' . substr((string)$me_res, 0, 300) . ')');
 }
 
 $me_data = json_decode($me_res, true);
