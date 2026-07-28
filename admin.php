@@ -1680,8 +1680,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             const msError = params.get('ms_error');
             if (!msConnected && !msError) return;
 
+            // ลบ ms_connected/ms_error ออกจาก URL ทันที ไม่งั้นกด refresh ทีไรจะเจอ alert เดิมซ้ำทุกครั้ง
+            const cleanUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, document.title, cleanUrl);
+
             document.addEventListener('DOMContentLoaded', () => {
-                if (typeof switchTab === 'function') switchTab('api');
+                if (typeof switchTab === 'function') switchTab('imap');
                 if (msConnected) {
                     showNotification('เชื่อมต่อบัญชี ' + decodeURIComponent(msConnected) + ' ผ่าน Microsoft สำเร็จแล้วค่ะ');
                 } else if (msError) {
