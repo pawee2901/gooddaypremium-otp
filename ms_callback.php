@@ -10,29 +10,6 @@
 error_reporting(0);
 ini_set('display_errors', '0');
 
-// DEBUG ชั่วคราว: บันทึกค่าที่ Microsoft ส่งกลับมาจริงๆ ลงไฟล์ล็อก เพื่อยืนยันว่าปัญหาหายไปแล้ว (ลบไฟล์นี้ทิ้งทีหลังเมื่อแก้เสร็จ)
-@file_put_contents(
-    __DIR__ . '/ms_callback_debug.log',
-    date('Y-m-d H:i:s') . " QUERY_STRING=" . ($_SERVER['QUERY_STRING'] ?? '') . " REQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . " GET=" . json_encode($_GET) . "\n",
-    FILE_APPEND
-);
-
-// DEBUG ชั่วคราว: ถ้าไม่มี query string เข้ามาเลย ให้หยุดค้างอยู่หน้านี้แสดงรายละเอียดตรงๆ แทนการ redirect
-// เพื่อให้เห็น URL เต็มๆ ที่ browser navigate มาจริง (ลบส่วนนี้ทิ้งทีหลังเมื่อแก้เสร็จ)
-if (empty($_GET)) {
-    header('Content-Type: text/plain; charset=utf-8');
-    die(
-        "DEBUG: ไม่มี query string เข้ามาเลยที่ไฟล์นี้\n\n" .
-        "REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? '(none)') . "\n" .
-        "QUERY_STRING: " . ($_SERVER['QUERY_STRING'] ?? '(none)') . "\n" .
-        "HTTP_HOST: " . ($_SERVER['HTTP_HOST'] ?? '(none)') . "\n" .
-        "HTTPS: " . ($_SERVER['HTTPS'] ?? '(none)') . "\n" .
-        "SERVER_PROTOCOL: " . ($_SERVER['SERVER_PROTOCOL'] ?? '(none)') . "\n" .
-        "REDIRECT_STATUS: " . ($_SERVER['REDIRECT_STATUS'] ?? '(none)') . "\n" .
-        "REQUEST_METHOD: " . ($_SERVER['REQUEST_METHOD'] ?? '(none)') . "\n"
-    );
-}
-
 $config_path = __DIR__ . '/config.json';
 $config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
 if (!is_array($config_data)) {
@@ -62,8 +39,7 @@ if (empty($client_id) || empty($client_secret)) {
 $state = $_GET['state'] ?? '';
 $state_parts = explode('.', $state, 2);
 if (count($state_parts) !== 2) {
-    // DEBUG ชั่วคราว: โชว์ค่า state ที่ได้รับจริงเพื่อหาสาเหตุ (ลบออกทีหลังเมื่อแก้เสร็จ)
-    redirect_with_error('state ไม่ถูกต้อง (debug: len=' . strlen($state) . ' raw=' . substr($state, 0, 80) . ' all_get_keys=' . implode(',', array_keys($_GET)) . ')');
+    redirect_with_error('state ไม่ถูกต้อง กรุณาลองเชื่อมต่อใหม่อีกครั้ง');
 }
 list($ms_nonce, $ms_sig) = $state_parts;
 $expected_sig = hash_hmac('sha256', $ms_nonce, $client_secret);
