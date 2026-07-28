@@ -3,7 +3,6 @@
 // Microsoft OAuth Callback — รับ authorization code กลับมาจาก Microsoft แล้วแลกเป็น
 // access token + refresh token เพื่อเก็บไว้อ่านกล่องเมล Hotmail/Outlook ผ่าน Graph API
 // =========================================================================
-session_start();
 error_reporting(0);
 ini_set('display_errors', '0');
 
@@ -24,23 +23,29 @@ if (isset($_GET['error'])) {
     redirect_with_error($desc);
 }
 
-// ตรวจสอบ state เพื่อป้องกัน CSRF (ต้องตรงกับค่าที่สร้างไว้ตอนเริ่มขั้นตอนใน admin.php)
+$client_id = $config_data['microsoft_oauth']['client_id'] ?? '';
+$client_secret = $config_data['microsoft_oauth']['client_secret'] ?? '';
+if (empty($client_id) || empty($client_secret)) {
+    redirect_with_error('ยังไม่ได้ตั้งค่า Client ID / Client Secret ในหน้า Admin');
+}
+
+// ตรวจสอบ state เพื่อป้องกัน CSRF โดยเช็คลายเซ็น HMAC แทนการเทียบกับค่าใน Session
+// (ไม่ใช้ Session เพราะ browser ต้องกระโดดออกไปที่ login.microsoftonline.com แล้ววกกลับมา
+// ซึ่ง Session Cookie อาจไม่ติดกลับมาด้วย ขึ้นอยู่กับ policy ของแต่ละโฮสติ้ง)
 $state = $_GET['state'] ?? '';
-$expected_state = $_SESSION['ms_oauth_state'] ?? '';
-unset($_SESSION['ms_oauth_state']);
-if (empty($state) || empty($expected_state) || !hash_equals($expected_state, $state)) {
-    redirect_with_error('state ไม่ตรงกัน (อาจหมดอายุ กรุณาลองเชื่อมต่อใหม่อีกครั้ง)');
+$state_parts = explode('.', $state, 2);
+if (count($state_parts) !== 2) {
+    redirect_with_error('state ไม่ถูกต้อง กรุณาลองเชื่อมต่อใหม่อีกครั้ง');
+}
+list($ms_nonce, $ms_sig) = $state_parts;
+$expected_sig = hash_hmac('sha256', $ms_nonce, $client_secret);
+if (!hash_equals($expected_sig, $ms_sig)) {
+    redirect_with_error('state ไม่ตรงกัน กรุณาลองเชื่อมต่อใหม่อีกครั้ง');
 }
 
 $code = $_GET['code'] ?? '';
 if (empty($code)) {
     redirect_with_error('ไม่พบ authorization code จาก Microsoft');
-}
-
-$client_id = $config_data['microsoft_oauth']['client_id'] ?? '';
-$client_secret = $config_data['microsoft_oauth']['client_secret'] ?? '';
-if (empty($client_id) || empty($client_secret)) {
-    redirect_with_error('ยังไม่ได้ตั้งค่า Client ID / Client Secret ในหน้า Admin');
 }
 
 // ต้องเหมือนกับ Redirect URI ที่ใช้ตอนเริ่มขั้นตอน (ใน admin.php) และที่ลงทะเบียนไว้ใน Azure เป๊ะๆ

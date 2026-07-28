@@ -487,8 +487,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
         exit;
     }
 
-    $ms_state = bin2hex(random_bytes(16));
-    $_SESSION['ms_oauth_state'] = $ms_state;
+    // สร้าง state แบบเซ็นลายเซ็นด้วย client_secret แทนการเก็บใน Session เพราะ browser ต้องกระโดดออกไปที่
+    // login.microsoftonline.com แล้ววกกลับมา ทำให้ Session Cookie อาจไม่ติดกลับมาด้วย (ขึ้นอยู่กับ policy ของแต่ละโฮสติ้ง)
+    // การเซ็นด้วย HMAC แบบนี้ตรวจสอบความถูกต้องได้โดยไม่ต้องพึ่ง Session เลย
+    $ms_client_secret = $config['microsoft_oauth']['client_secret'] ?? '';
+    $ms_nonce = bin2hex(random_bytes(16));
+    $ms_state = $ms_nonce . '.' . hash_hmac('sha256', $ms_nonce, $ms_client_secret);
 
     // ต้องตรงกับ Redirect URI ที่ลงทะเบียนไว้ใน Azure App Registration เป๊ะๆ (รวมทั้ง https:// และ .php ต่อท้าย)
     $ms_redirect_uri = 'https://' . $_SERVER['HTTP_HOST'] . '/api/auth/microsoft/callback.php';
