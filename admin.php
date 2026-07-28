@@ -441,6 +441,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    // --- Action: บันทึก Client ID / Client Secret ของ Microsoft App (สำหรับเชื่อมต่อ Hotmail/Outlook ผ่าน Graph API) ---
+    if ($action === 'save_microsoft_oauth') {
+        header('Content-Type: application/json');
+        $ms_client_id = isset($_POST['client_id']) ? trim($_POST['client_id']) : '';
+        $ms_client_secret = isset($_POST['client_secret']) ? trim($_POST['client_secret']) : '';
+
+        if (empty($ms_client_id) || empty($ms_client_secret)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'กรุณากรอก Client ID และ Client Secret ให้ครบ']);
+            exit;
+        }
+
+        if (!isset($config['microsoft_oauth']) || !is_array($config['microsoft_oauth'])) {
+            $config['microsoft_oauth'] = [];
+        }
+        $config['microsoft_oauth']['client_id'] = $ms_client_id;
+        $config['microsoft_oauth']['client_secret'] = $ms_client_secret;
+
+        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        echo json_encode(['success' => true, 'message' => 'บันทึกการตั้งค่า Microsoft App สำเร็จ']);
+        exit;
+    }
 }
 
 // ดำเนินการ Logout
@@ -448,6 +471,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     unset($_SESSION['admin_logged_in']);
     session_destroy();
     header('Location: admin.php');
+    exit;
+}
+
+// เริ่มขั้นตอนเชื่อมต่อบัญชี Hotmail/Outlook ผ่าน Microsoft OAuth (ส่งแอดมินไปหน้า Login ของ Microsoft)
+if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
+    if (!$logged_in) {
+        header('Location: admin.php');
+        exit;
+    }
+
+    $ms_client_id = $config['microsoft_oauth']['client_id'] ?? '';
+    if (empty($ms_client_id)) {
+        header('Location: admin.php?ms_error=missing_config#api');
+        exit;
+    }
+
+    $ms_state = bin2hex(random_bytes(16));
+    $_SESSION['ms_oauth_state'] = $ms_state;
+
+    // ต้องตรงกับ Redirect URI ที่ลงทะเบียนไว้ใน Azure App Registration เป๊ะๆ (รวมทั้ง https:// และ .php ต่อท้าย)
+    $ms_redirect_uri = 'https://' . $_SERVER['HTTP_HOST'] . '/api/auth/microsoft/callback.php';
+
+    $ms_auth_url = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?' . http_build_query([
+        'client_id'     => $ms_client_id,
+        'response_type' => 'code',
+        'redirect_uri'  => $ms_redirect_uri,
+        'response_mode' => 'query',
+        'scope'         => 'offline_access Mail.Read',
+        'state'         => $ms_state
+    ]);
+
+    header('Location: ' . $ms_auth_url);
     exit;
 }
 ?>
@@ -726,7 +781,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                             </div>
                             <div class="min-w-0 flex-1 space-y-0.5">
                                 <h3 class="text-xs sm:text-sm font-extrabold text-gray-900 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></h3>
-                                <p class="text-[10px] text-gray-400 truncate"><?php echo htmlspecialchars($item['host'] ?? 'imap.gmail.com'); ?>:<?php echo htmlspecialchars($item['port'] ?? 993); ?> &middot; <?php echo !empty($item['password']) ? 'pass: ••••••••' : 'no pass'; ?></p>
+                                <p class="text-[10px] text-gray-400 truncate">
+                                    <?php if (($item['provider'] ?? '') === 'microsoft_graph'): ?>
+                                        <i class="fa-brands fa-microsoft"></i> เชื่อมต่อผ่าน Microsoft Graph API (OAuth)
+                                    <?php else: ?>
+                                        <?php echo htmlspecialchars($item['host'] ?? 'imap.gmail.com'); ?>:<?php echo htmlspecialchars($item['port'] ?? 993); ?> &middot; <?php echo !empty($item['password']) ? 'pass: ••••••••' : 'no pass'; ?>
+                                    <?php endif; ?>
+                                </p>
                                 <div class="pt-0.5 flex items-center gap-1.5">
                                     <?php if ($is_active): ?>
                                     <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-[9px] font-bold px-2 py-0.5 rounded-md">
@@ -889,6 +950,86 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         </div>
                         <?php endforeach; endif; ?>
                     </div>
+                </div>
+
+                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6" id="msOauthSection">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-purple-600 text-lg"><i class="fa-brands fa-microsoft"></i></span>
+                                <h2 class="text-base font-extrabold text-gray-900">เชื่อมต่อ Hotmail/Outlook ผ่าน Microsoft (Graph API)</h2>
+                            </div>
+                            <p class="text-xs text-gray-400">อ่านกล่องเมลตรงผ่าน API ทางการของ Microsoft เร็ว/แม่นยำกว่าการ Forward เข้าอีเมลกลาง</p>
+                        </div>
+                    </div>
+
+                    <?php
+                        $ms_config = isset($config['microsoft_oauth']) && is_array($config['microsoft_oauth']) ? $config['microsoft_oauth'] : [];
+                        $ms_client_id = $ms_config['client_id'] ?? '';
+                        $ms_client_secret = $ms_config['client_secret'] ?? '';
+                        $ms_accounts = [];
+                        if (isset($config['imap_emails']) && is_array($config['imap_emails'])) {
+                            foreach ($config['imap_emails'] as $ms_item) {
+                                if (($ms_item['provider'] ?? '') === 'microsoft_graph') {
+                                    $ms_accounts[] = $ms_item;
+                                }
+                            }
+                        }
+                    ?>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-700">Application (client) ID</label>
+                            <input type="text" id="msClientIdInput" value="<?php echo htmlspecialchars($ms_client_id); ?>" placeholder="เช่น 13b065c6-37bc-4922-..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-700">Client Secret (Value)</label>
+                            <input type="password" id="msClientSecretInput" value="<?php echo htmlspecialchars($ms_client_secret); ?>" placeholder="เช่น WwW8Q~gZ0gGBP..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/80 border border-blue-200/70 rounded-2xl p-3.5 text-[11px] text-blue-900 leading-relaxed">
+                        Redirect URI ที่ต้องตั้งค่าใน Azure App Registration (เมนู Authentication) ให้ตรงกันเป๊ะๆ:<br>
+                        <code class="font-mono font-bold break-all">https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']); ?>/api/auth/microsoft/callback.php</code>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="handleSaveMicrosoftOAuth()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-[0.98]">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกการตั้งค่า
+                        </button>
+                        <?php if (!empty($ms_client_id)): ?>
+                        <a href="admin.php?action=connect_microsoft" class="bg-white hover:bg-gray-50 text-purple-700 border border-purple-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all inline-flex items-center">
+                            <i class="fa-brands fa-microsoft mr-1"></i> เชื่อมต่อบัญชี Hotmail/Outlook เพิ่ม
+                        </a>
+                        <?php else: ?>
+                        <span class="text-[11px] text-gray-400">กรอกและบันทึก Client ID / Secret ก่อน ถึงจะเชื่อมต่อบัญชีได้</span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (!empty($ms_accounts)): ?>
+                    <div class="space-y-2 pt-3 border-t border-gray-100">
+                        <p class="text-xs font-bold text-gray-700">บัญชีที่เชื่อมต่อแล้ว (<?php echo count($ms_accounts); ?>)</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <?php foreach ($ms_accounts as $ms_acc): $ms_active = isset($ms_acc['active']) ? (bool)$ms_acc['active'] : true; ?>
+                            <div class="border rounded-xl p-3 flex items-center justify-between gap-2 <?php echo $ms_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60'; ?>">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <i class="fa-brands fa-microsoft text-blue-600"></i>
+                                    <span class="text-xs font-bold text-gray-800 truncate"><?php echo htmlspecialchars($ms_acc['email']); ?></span>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" <?php echo $ms_active ? 'checked' : ''; ?> onchange="toggleEmailActive('<?php echo htmlspecialchars($ms_acc['id']); ?>', this.checked)" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                    </label>
+                                    <button onclick="deleteEmail('<?php echo htmlspecialchars($ms_acc['id']); ?>')" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
+                                        <i class="fa-regular fa-trash-can text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
@@ -1602,6 +1743,50 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 alert('เกิดความขัดข้องในการบันทึกข้อมูล');
             }
         }
+        async function handleSaveMicrosoftOAuth() {
+            const client_id = document.getElementById('msClientIdInput').value.trim();
+            const client_secret = document.getElementById('msClientSecretInput').value.trim();
+
+            if (!client_id || !client_secret) {
+                alert('กรุณากรอก Client ID และ Client Secret ให้ครบ');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('client_id', client_id);
+            formData.append('client_secret', client_secret);
+
+            try {
+                const res = await fetch('admin.php?action=save_microsoft_oauth', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('บันทึกการตั้งค่า Microsoft App เรียบร้อยแล้วค่ะ');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    alert(data.message || 'ไม่สามารถบันทึกการตั้งค่าได้');
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+        }
+
+        // เช็ค query string หลังเชื่อมต่อ Microsoft OAuth กลับมา แล้วสลับไปแท็บ API + โชว์แจ้งเตือนให้อัตโนมัติ
+        (function checkMicrosoftOAuthResult() {
+            const params = new URLSearchParams(window.location.search);
+            const msConnected = params.get('ms_connected');
+            const msError = params.get('ms_error');
+            if (!msConnected && !msError) return;
+
+            document.addEventListener('DOMContentLoaded', () => {
+                if (typeof switchTab === 'function') switchTab('api');
+                if (msConnected) {
+                    showNotification('เชื่อมต่อบัญชี ' + decodeURIComponent(msConnected) + ' ผ่าน Microsoft สำเร็จแล้วค่ะ');
+                } else if (msError) {
+                    alert('เชื่อมต่อ Microsoft ไม่สำเร็จ: ' + decodeURIComponent(msError));
+                }
+            });
+        })();
+
         function filterEmailList(query) {
             const cleanQuery = query.trim().toLowerCase();
             const cards = document.querySelectorAll('.email-card');
@@ -1651,3 +1836,4 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     </script>
 </body>
 </html>
+

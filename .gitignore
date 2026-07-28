@@ -4,6 +4,9 @@ __pycache__/
 scratch/
 .idea/
 .vscode/
+node_modules/
+package.json
+package-lock.json
 
 # config.json คือไฟล์ข้อมูลจริงที่แก้ไขผ่านหน้า Admin บนเว็บโดยตรง (อีเมล/รหัสผ่าน/แอป/ผู้ใช้แอดมิน)
 # ห้าม track ใน git เพราะทุกครั้งที่ deploy จะเขียนทับค่าที่แอดมินตั้งไว้บนเว็บจริงด้วยค่าที่ commit ไว้เก่ากว่า

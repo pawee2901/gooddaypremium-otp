@@ -412,6 +412,134 @@ function run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, 
     return $all_found;
 }
 
+// URL สำหรับแลก authorization code / refresh token เป็น access token ของ Microsoft (บัญชีส่วนบุคคลเท่านั้น)
+define('MS_TOKEN_URL', 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token');
+define('MS_OAUTH_SCOPE', 'offline_access Mail.Read');
+
+// ฟังก์ชันดึง OTP จากบัญชี Hotmail/Outlook ที่เชื่อมต่อผ่าน Microsoft Graph API (OAuth)
+// เร็วและแม่นยำกว่าการ Forward เข้า Gmail/Maily กลางมาก เพราะอ่านจากกล่องเมลจริงของบัญชีนั้นโดยตรง
+function scan_ms_graph_account(&$config_data, $config_path, $creds, $app_name) {
+    $refresh_token = $creds['refresh_token'] ?? '';
+    $oauth = $config_data['microsoft_oauth'] ?? [];
+    $client_id = $oauth['client_id'] ?? '';
+    $client_secret = $oauth['client_secret'] ?? '';
+    if (empty($refresh_token) || empty($client_id) || empty($client_secret)) {
+        return [];
+    }
+
+    // ขอ Access Token ใหม่ด้วย Refresh Token (Microsoft จะออก Refresh Token ใหม่ให้ทุกครั้งที่ใช้งาน ต้องบันทึกทับของเก่าเสมอ)
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, MS_TOKEN_URL);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'client_id'     => $client_id,
+        'client_secret' => $client_secret,
+        'refresh_token' => $refresh_token,
+        'grant_type'    => 'refresh_token',
+        'scope'         => MS_OAUTH_SCOPE
+    ]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    $token_res = curl_exec($ch);
+    $token_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($token_http_code !== 200 || !$token_res) {
+        return [];
+    }
+
+    $token_data = json_decode($token_res, true);
+    $access_token = $token_data['access_token'] ?? '';
+    if (empty($access_token)) {
+        return [];
+    }
+
+    // บันทึก Refresh Token ใหม่กลับเข้า config.json ทันที (ถ้า Microsoft ออกตัวใหม่มาให้)
+    if (!empty($token_data['refresh_token']) && $token_data['refresh_token'] !== $refresh_token) {
+        if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+            foreach ($config_data['imap_emails'] as $idx => $item) {
+                if (strtolower($item['email'] ?? '') === strtolower($creds['email'] ?? '') && ($item['provider'] ?? '') === 'microsoft_graph') {
+                    $config_data['imap_emails'][$idx]['refresh_token'] = $token_data['refresh_token'];
+                    @file_put_contents($config_path, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                    break;
+                }
+            }
+        }
+    }
+
+    // ดึงอีเมล 5 ฉบับล่าสุดจากกล่องขาเข้าโดยตรงผ่าน Graph API
+    $ch2 = curl_init();
+    $query = http_build_query([
+        '$top'     => 5,
+        '$orderby' => 'receivedDateTime desc',
+        '$select'  => 'subject,from,receivedDateTime,body'
+    ]);
+    curl_setopt($ch2, CURLOPT_URL, 'https://graph.microsoft.com/v1.0/me/messages?' . $query);
+    curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $access_token]);
+    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch2, CURLOPT_TIMEOUT, 8);
+    curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch2, CURLOPT_SSL_VERIFYHOST, false);
+    $mail_res = curl_exec($ch2);
+    $mail_http_code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+    curl_close($ch2);
+
+    if ($mail_http_code !== 200 || !$mail_res) {
+        return [];
+    }
+
+    $mail_data = json_decode($mail_res, true);
+    $messages = $mail_data['value'] ?? [];
+
+    $found = [];
+    foreach ($messages as $msg) {
+        $from_addr = $msg['from']['emailAddress']['address'] ?? '';
+        $from_name = $msg['from']['emailAddress']['name'] ?? '';
+        $from_full = $from_name !== '' ? ($from_name . ' <' . $from_addr . '>') : $from_addr;
+        $subject = $msg['subject'] ?? '';
+        $body_content = $msg['body']['content'] ?? '';
+        $received = $msg['receivedDateTime'] ?? ''; // ISO 8601 UTC เช่น 2026-07-28T10:15:00Z
+
+        $ts = $received !== '' ? strtotime($received) : false;
+        if ($ts === false) {
+            continue;
+        }
+        // ตรวจสอบอายุจดหมาย - ถ้าส่งมาเกิน 2 ชั่วโมง ให้ข้ามทันที
+        if ((time() - $ts) > 7200) {
+            continue;
+        }
+
+        if (!matches_app($from_full, $subject, $app_name, $body_content)) {
+            continue;
+        }
+
+        $dt_thai = new DateTime('@' . $ts);
+        $dt_thai->setTimezone(new DateTimeZone('Asia/Bangkok'));
+        $thai_time = $dt_thai->format('d/m/') . ((int)$dt_thai->format('Y') + 543) . ' ' . $dt_thai->format('H:i') . ' น.';
+
+        $otp_code = extract_otp_code($body_content) ?? '';
+        $ref_code = extract_ref_code($body_content) ?? '';
+
+        $found[] = [
+            'subject'   => $subject ?: 'ไม่มีหัวข้อ',
+            'from'      => $from_full,
+            'time'      => $thai_time,
+            'timestamp' => $ts,
+            'otp'       => $otp_code,
+            'ref'       => $ref_code,
+            'html_body' => $body_content
+        ];
+
+        if (!empty($otp_code)) {
+            break;
+        }
+    }
+
+    return $found;
+}
+
 if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
     foreach ($config_data['imap_emails'] as $item) {
         if (strtolower($item['email'] ?? '') === strtolower($email)) {
@@ -430,6 +558,42 @@ if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails']))
 // 3. จัดการการดึงข้อมูลตามประเภทของอีเมล (Maily Space API & Central Accounts)
 // =========================================================================
 $lower_email = strtolower($email);
+
+// -------------------------------------------------------------------------
+// ช่องทางลัดที่เร็ว/แม่นยำที่สุด: ถ้าอีเมลนี้เชื่อมต่อผ่าน Microsoft Graph API (OAuth) ไว้แล้ว ให้อ่านกล่องเมลจริงโดยตรงทันที
+// ไม่ต้องพึ่งการ Forward เข้า Gmail/Maily กลางเลย เพราะอ่านจากกล่องเมลของบัญชีนั้นเองตรงๆ ผ่าน API ทางการของ Microsoft
+// -------------------------------------------------------------------------
+$direct_ms_account = null;
+if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
+    foreach ($config_data['imap_emails'] as $imap_item) {
+        if (strtolower($imap_item['email'] ?? '') === $lower_email
+            && ($imap_item['provider'] ?? '') === 'microsoft_graph'
+            && !empty($imap_item['refresh_token'])) {
+            $direct_ms_account = $imap_item;
+            break;
+        }
+    }
+}
+
+if ($direct_ms_account) {
+    $ms_found = scan_ms_graph_account($config_data, $config_path, $direct_ms_account, $app_name);
+    if (!empty($ms_found)) {
+        usort($ms_found, function($a, $b) { return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0); });
+        echo json_encode([
+            'success'  => true,
+            'app_name' => $app_name,
+            'email'    => $email,
+            'emails'   => $ms_found
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => false,
+        'message' => "ไม่พบอีเมลยืนยันตัวตนล่าสุดของ $app_name ส่งมายัง $email (กรุณากดส่งรหัส OTP ใหม่อีกครั้ง)"
+    ]);
+    exit;
+}
 
 // -------------------------------------------------------------------------
 // ช่องทางลัด: ถ้าอีเมลนี้ถูกลงทะเบียนเป็นบัญชี IMAP ตรงในระบบอยู่แล้ว (ไม่ใช่ผ่าน Maily) ให้ดึงจาก IMAP บัญชีนั้นทันที
