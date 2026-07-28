@@ -725,17 +725,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                             <i class="fa-solid fa-info"></i>
                         </div>
                         <div class="space-y-1 leading-relaxed">
-                            <p class="font-bold">วิธีใช้: <span class="font-normal">เพิ่มอีเมลพร้อม App Password ที่นี่ &rarr; ผู้ใช้แค่พิมพ์อีเมลในหน้า OTP &rarr; ระบบดึงรหัสให้อัตโนมัติโดยไม่ต้องกรอก password เลยค่ะ</span></p>
-                            <p class="font-semibold text-amber-700"><i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i>Gmail ต้องใช้ App Password ส่วน Hotmail/Outlook ไม่ต้องใส่รหัสผ่าน (ใช้การส่งต่ออีเมล)</p>
-                            
+                            <p class="font-bold">วิธีใช้: <span class="font-normal">เพิ่มอีเมล Gmail พร้อม App Password ที่นี่ &rarr; ผู้ใช้แค่พิมพ์อีเมลในหน้า OTP &rarr; ระบบดึงรหัสให้อัตโนมัติโดยไม่ต้องกรอก password เลยค่ะ</span></p>
+                            <p class="font-semibold text-amber-700"><i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i>ส่วน Hotmail/Outlook ให้เลื่อนลงไปกดปุ่ม "เชื่อมต่อบัญชี Hotmail/Outlook" ด้านล่างแทนค่ะ</p>
+
                             <div class="pt-2 border-t border-blue-200/50 flex flex-wrap items-center gap-2">
                                 <button type="button" onclick="openGuideModal('gmail')" class="inline-flex items-center gap-1.5 bg-white hover:bg-blue-100/70 text-purple-700 border border-purple-200 text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer">
                                     <i class="fa-brands fa-google text-red-500"></i>
                                     <span>วิธีหา App Password (Gmail)</span>
-                                </button>
-                                <button type="button" onclick="openGuideModal('outlook')" class="inline-flex items-center gap-1.5 bg-white hover:bg-blue-100/70 text-blue-700 border border-blue-200 text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer">
-                                    <i class="fa-brands fa-microsoft text-blue-600"></i>
-                                    <span>วิธีตั้งค่า Forwarding (Outlook)</span>
                                 </button>
                             </div>
                         </div>
@@ -826,6 +822,86 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     <?php endforeach; endif; ?>
                 </div>
 
+            </div>
+
+            <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6" id="msOauthSection">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-purple-600 text-lg"><i class="fa-brands fa-microsoft"></i></span>
+                            <h2 class="text-base font-extrabold text-gray-900">เชื่อมต่อ Hotmail/Outlook ผ่าน Microsoft (Graph API)</h2>
+                        </div>
+                        <p class="text-xs text-gray-400">อ่านกล่องเมลตรงผ่าน API ทางการของ Microsoft เร็ว/แม่นยำกว่าการ Forward เข้าอีเมลกลาง</p>
+                    </div>
+                </div>
+
+                <?php
+                    $ms_config = isset($config['microsoft_oauth']) && is_array($config['microsoft_oauth']) ? $config['microsoft_oauth'] : [];
+                    $ms_client_id = $ms_config['client_id'] ?? '';
+                    $ms_client_secret = $ms_config['client_secret'] ?? '';
+                    $ms_accounts = [];
+                    if (isset($config['imap_emails']) && is_array($config['imap_emails'])) {
+                        foreach ($config['imap_emails'] as $ms_item) {
+                            if (($ms_item['provider'] ?? '') === 'microsoft_graph') {
+                                $ms_accounts[] = $ms_item;
+                            }
+                        }
+                    }
+                ?>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-gray-700">Application (client) ID</label>
+                        <input type="text" id="msClientIdInput" value="<?php echo htmlspecialchars($ms_client_id); ?>" placeholder="เช่น 13b065c6-37bc-4922-..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-gray-700">Client Secret (Value)</label>
+                        <input type="password" id="msClientSecretInput" value="<?php echo htmlspecialchars($ms_client_secret); ?>" placeholder="เช่น WwW8Q~gZ0gGBP..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50/80 border border-blue-200/70 rounded-2xl p-3.5 text-[11px] text-blue-900 leading-relaxed">
+                    Redirect URI ที่ต้องตั้งค่าใน Azure App Registration (เมนู Authentication) ให้ตรงกันเป๊ะๆ:<br>
+                    <code class="font-mono font-bold break-all">https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']); ?>/ms_callback.php</code>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="handleSaveMicrosoftOAuth()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-[0.98]">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกการตั้งค่า
+                    </button>
+                    <?php if (!empty($ms_client_id)): ?>
+                    <a href="admin.php?action=connect_microsoft" class="bg-white hover:bg-gray-50 text-purple-700 border border-purple-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all inline-flex items-center">
+                        <i class="fa-brands fa-microsoft mr-1"></i> เชื่อมต่อบัญชี Hotmail/Outlook เพิ่ม
+                    </a>
+                    <?php else: ?>
+                    <span class="text-[11px] text-gray-400">กรอกและบันทึก Client ID / Secret ก่อน ถึงจะเชื่อมต่อบัญชีได้</span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (!empty($ms_accounts)): ?>
+                <div class="space-y-2 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-bold text-gray-700">บัญชีที่เชื่อมต่อแล้ว (<?php echo count($ms_accounts); ?>)</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <?php foreach ($ms_accounts as $ms_acc): $ms_active = isset($ms_acc['active']) ? (bool)$ms_acc['active'] : true; ?>
+                        <div class="border rounded-xl p-3 flex items-center justify-between gap-2 <?php echo $ms_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60'; ?>">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fa-brands fa-microsoft text-blue-600"></i>
+                                <span class="text-xs font-bold text-gray-800 truncate"><?php echo htmlspecialchars($ms_acc['email']); ?></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" <?php echo $ms_active ? 'checked' : ''; ?> onchange="toggleEmailActive('<?php echo htmlspecialchars($ms_acc['id']); ?>', this.checked)" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                                <button onclick="deleteEmail('<?php echo htmlspecialchars($ms_acc['id']); ?>')" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
+                                    <i class="fa-regular fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -957,86 +1033,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     </div>
                 </div>
 
-                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6" id="msOauthSection">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-purple-600 text-lg"><i class="fa-brands fa-microsoft"></i></span>
-                                <h2 class="text-base font-extrabold text-gray-900">เชื่อมต่อ Hotmail/Outlook ผ่าน Microsoft (Graph API)</h2>
-                            </div>
-                            <p class="text-xs text-gray-400">อ่านกล่องเมลตรงผ่าน API ทางการของ Microsoft เร็ว/แม่นยำกว่าการ Forward เข้าอีเมลกลาง</p>
-                        </div>
-                    </div>
-
-                    <?php
-                        $ms_config = isset($config['microsoft_oauth']) && is_array($config['microsoft_oauth']) ? $config['microsoft_oauth'] : [];
-                        $ms_client_id = $ms_config['client_id'] ?? '';
-                        $ms_client_secret = $ms_config['client_secret'] ?? '';
-                        $ms_accounts = [];
-                        if (isset($config['imap_emails']) && is_array($config['imap_emails'])) {
-                            foreach ($config['imap_emails'] as $ms_item) {
-                                if (($ms_item['provider'] ?? '') === 'microsoft_graph') {
-                                    $ms_accounts[] = $ms_item;
-                                }
-                            }
-                        }
-                    ?>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-gray-700">Application (client) ID</label>
-                            <input type="text" id="msClientIdInput" value="<?php echo htmlspecialchars($ms_client_id); ?>" placeholder="เช่น 13b065c6-37bc-4922-..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-gray-700">Client Secret (Value)</label>
-                            <input type="password" id="msClientSecretInput" value="<?php echo htmlspecialchars($ms_client_secret); ?>" placeholder="เช่น WwW8Q~gZ0gGBP..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
-                        </div>
-                    </div>
-
-                    <div class="bg-blue-50/80 border border-blue-200/70 rounded-2xl p-3.5 text-[11px] text-blue-900 leading-relaxed">
-                        Redirect URI ที่ต้องตั้งค่าใน Azure App Registration (เมนู Authentication) ให้ตรงกันเป๊ะๆ:<br>
-                        <code class="font-mono font-bold break-all">https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']); ?>/ms_callback.php</code>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button type="button" onclick="handleSaveMicrosoftOAuth()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-[0.98]">
-                            <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกการตั้งค่า
-                        </button>
-                        <?php if (!empty($ms_client_id)): ?>
-                        <a href="admin.php?action=connect_microsoft" class="bg-white hover:bg-gray-50 text-purple-700 border border-purple-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all inline-flex items-center">
-                            <i class="fa-brands fa-microsoft mr-1"></i> เชื่อมต่อบัญชี Hotmail/Outlook เพิ่ม
-                        </a>
-                        <?php else: ?>
-                        <span class="text-[11px] text-gray-400">กรอกและบันทึก Client ID / Secret ก่อน ถึงจะเชื่อมต่อบัญชีได้</span>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if (!empty($ms_accounts)): ?>
-                    <div class="space-y-2 pt-3 border-t border-gray-100">
-                        <p class="text-xs font-bold text-gray-700">บัญชีที่เชื่อมต่อแล้ว (<?php echo count($ms_accounts); ?>)</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <?php foreach ($ms_accounts as $ms_acc): $ms_active = isset($ms_acc['active']) ? (bool)$ms_acc['active'] : true; ?>
-                            <div class="border rounded-xl p-3 flex items-center justify-between gap-2 <?php echo $ms_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60'; ?>">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <i class="fa-brands fa-microsoft text-blue-600"></i>
-                                    <span class="text-xs font-bold text-gray-800 truncate"><?php echo htmlspecialchars($ms_acc['email']); ?></span>
-                                </div>
-                                <div class="flex items-center gap-1.5 flex-shrink-0">
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" <?php echo $ms_active ? 'checked' : ''; ?> onchange="toggleEmailActive('<?php echo htmlspecialchars($ms_acc['id']); ?>', this.checked)" class="sr-only peer">
-                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                    </label>
-                                    <button onclick="deleteEmail('<?php echo htmlspecialchars($ms_acc['id']); ?>')" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
-                                        <i class="fa-regular fa-trash-can text-xs"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
                 <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
                     <div class="border-b border-gray-100 pb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900">
                         <i class="fa-solid fa-sliders text-purple-600"></i>
@@ -1113,62 +1109,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             </div>
 
             <form id="emailForm" onsubmit="handleSaveEmail(event)" class="space-y-4">
-                <!-- เลือกประเภทผู้ให้บริการ -->
-                <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-gray-700">ผู้ให้บริการอีเมล (Provider)</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" onclick="selectProvider('gmail')" id="provBtnGmail" class="border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all">
-                            <i class="fa-brands fa-google text-red-500"></i> Gmail
-                        </button>
-                        <button type="button" onclick="selectProvider('hotmail')" id="provBtnHotmail" class="border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all">
-                            <i class="fa-brands fa-microsoft text-blue-600"></i> Hotmail
-                        </button>
-                        <button type="button" onclick="selectProvider('maily')" id="provBtnMaily" class="border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all">
-                            <i class="fa-solid fa-bolt text-amber-500"></i> Maily Space
-                        </button>
-                    </div>
-                </div>
+                <p class="text-xs text-gray-400">สำหรับ Gmail เท่านั้น (Hotmail/Outlook ใช้ปุ่ม "เชื่อมต่อผ่าน Microsoft" แทนแล้วค่ะ)</p>
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ที่อยู่อีเมล (Email Address)</label>
-                    <input type="email" id="emailAddrInput" required placeholder="เช่น example@gmail.com, hotmail.com หรือ @gooddaymail.com" 
-                           oninput="autoDetectAdminProvider(this.value)"
+                    <input type="email" id="emailAddrInput" required placeholder="เช่น example@gmail.com"
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
-                </div>
-
-                <!-- notice for Hotmail/Outlook (no password needed) -->
-                <div id="hotmailNoticeContainer" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-xs text-emerald-800 space-y-1">
-                    <div class="flex items-center gap-1.5 font-bold">
-                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                        <span>Hotmail / Outlook: ไม่ต้องใส่รหัสผ่าน</span>
-                    </div>
-                    <p class="text-[11px] text-emerald-700 leading-relaxed">
-                        ระบบใช้การส่งต่อ (Forwarding) ไปยัง Gmail กลางโดยอัตโนมัติ ไม่ต้องกรอกรหัสผ่านใดๆ ค่ะ
-                    </p>
-                </div>
-
-                <!-- notice for Maily Space (no password needed) -->
-                <div id="mailyNoticeContainer" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-900 space-y-1">
-                    <div class="flex items-center gap-1.5 font-bold">
-                        <i class="fa-solid fa-bolt text-amber-500"></i>
-                        <span>Maily Space: ไม่ต้องใส่รหัสผ่าน</span>
-                    </div>
-                    <p class="text-[11px] text-amber-700 leading-relaxed">
-                        ระบบดึงข้อมูลผ่าน Maily Space API อัตโนมัติทันที ไม่ต้องกรอกรหัสผ่านใดๆ ค่ะ (รองรับ @lico.moe, @rdcw.plus, @gooddaymail.com ฯลฯ)
-                    </p>
                 </div>
 
                 <div class="space-y-1.5" id="passInputContainer">
                     <label class="text-xs font-bold text-gray-700">App Password (รหัสผ่านแอป 16 หลัก)</label>
-                    <input type="password" id="emailPassInput" placeholder="รหัสผ่าน App Password สำหรับ IMAP" 
+                    <input type="password" id="emailPassInput" placeholder="รหัสผ่าน App Password สำหรับ IMAP"
                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
                     <p class="text-[10px] text-gray-400">* Gmail ต้องสร้าง App Password ในบัญชี Google เพื่อล็อกอิน IMAP</p>
                     <div class="flex flex-wrap items-center gap-3 pt-1">
                         <button type="button" onclick="openGuideModal('gmail')" class="text-[11px] font-bold text-purple-600 hover:text-purple-800 underline flex items-center gap-1 cursor-pointer">
                             <i class="fa-brands fa-google text-red-500"></i> ดูวิธีเอา App Password (Gmail)
-                        </button>
-                        <button type="button" onclick="openGuideModal('outlook')" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 underline flex items-center gap-1 cursor-pointer">
-                            <i class="fa-brands fa-microsoft text-blue-600"></i> ดูวิธีตั้ง Forwarding (Outlook)
                         </button>
                     </div>
                 </div>
@@ -1336,7 +1292,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
 
     <!-- JavaScript Logic -->
     <script>
-        let currentProvider = 'gmail';
 
         function switchTab(tabName) {
             const tabs = ['imap', 'apps', 'api'];
@@ -1397,74 +1352,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             document.getElementById('emailModal').classList.add('hidden');
         }
 
-        function selectProvider(prov) {
-            currentProvider = prov;
-            const btnGmail = document.getElementById('provBtnGmail');
-            const btnHotmail = document.getElementById('provBtnHotmail');
-            const btnMaily = document.getElementById('provBtnMaily');
-            const hostInput = document.getElementById('emailHostInput');
-            const portInput = document.getElementById('emailPortInput');
-            const passContainer = document.getElementById('passInputContainer');
-            const passInput = document.getElementById('emailPassInput');
-            const hotmailNotice = document.getElementById('hotmailNoticeContainer');
-            const mailyNotice = document.getElementById('mailyNoticeContainer');
-
-            const activeClass = "border-2 border-purple-600 bg-purple-50 text-purple-700 font-bold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all";
-            const inactiveClass = "border border-gray-200 bg-white text-gray-700 font-semibold text-xs py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-all";
-
-            if (prov === 'gmail') {
-                if (btnGmail) btnGmail.className = activeClass;
-                if (btnHotmail) btnHotmail.className = inactiveClass;
-                if (btnMaily) btnMaily.className = inactiveClass;
-                if (hostInput) hostInput.value = "imap.gmail.com";
-                if (portInput) portInput.value = "993";
-                if (passContainer) passContainer.style.setProperty('display', 'block', 'important');
-                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'none', 'important');
-                if (mailyNotice) mailyNotice.style.setProperty('display', 'none', 'important');
-            } else if (prov === 'hotmail') {
-                if (btnHotmail) btnHotmail.className = activeClass;
-                if (btnGmail) btnGmail.className = inactiveClass;
-                if (btnMaily) btnMaily.className = inactiveClass;
-                if (hostInput) hostInput.value = "outlook.office365.com";
-                if (portInput) portInput.value = "993";
-                if (passInput) passInput.value = '';
-                if (passContainer) passContainer.style.setProperty('display', 'none', 'important');
-                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'block', 'important');
-                if (mailyNotice) mailyNotice.style.setProperty('display', 'none', 'important');
-            } else if (prov === 'maily') {
-                if (btnMaily) btnMaily.className = activeClass;
-                if (btnGmail) btnGmail.className = inactiveClass;
-                if (btnHotmail) btnHotmail.className = inactiveClass;
-                if (hostInput) hostInput.value = "api.maily.space";
-                if (portInput) portInput.value = "443";
-                if (passInput) passInput.value = '';
-                if (passContainer) passContainer.style.setProperty('display', 'none', 'important');
-                if (hotmailNotice) hotmailNotice.style.setProperty('display', 'none', 'important');
-                if (mailyNotice) mailyNotice.style.setProperty('display', 'block', 'important');
-            }
-        }
-
-        function autoDetectAdminProvider(emailVal) {
-            if (/@(lico\.moe|rdcw\.plus|gooddaymail\.com)/i.test(emailVal)) {
-                selectProvider('maily');
-            } else if (/@(hotmail\.|outlook\.|live\.|msn\.)/i.test(emailVal)) {
-                selectProvider('hotmail');
-            } else if (/@gmail\./i.test(emailVal)) {
-                selectProvider('gmail');
-            }
-        }
-
         async function handleSaveEmail(event) {
             event.preventDefault();
             const email = document.getElementById('emailAddrInput').value.trim();
-            const password = (currentProvider === 'hotmail' || currentProvider === 'maily') ? '' : document.getElementById('emailPassInput').value.trim();
+            const password = document.getElementById('emailPassInput').value.trim();
             const host = document.getElementById('emailHostInput').value.trim();
             const port = document.getElementById('emailPortInput').value.trim();
 
             const formData = new FormData();
             formData.append('email', email);
             formData.append('password', password);
-            formData.append('provider', currentProvider);
+            formData.append('provider', 'gmail');
             formData.append('host', host);
             formData.append('port', port);
 
