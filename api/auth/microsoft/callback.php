@@ -6,6 +6,13 @@
 error_reporting(0);
 ini_set('display_errors', '0');
 
+// DEBUG ชั่วคราว: บันทึกค่าที่ Microsoft ส่งกลับมาจริงๆ ลงไฟล์ล็อก เพื่อหาสาเหตุที่ state หายไป (ลบไฟล์นี้ทิ้งทีหลังเมื่อแก้เสร็จ)
+@file_put_contents(
+    __DIR__ . '/debug.log',
+    date('Y-m-d H:i:s') . " QUERY_STRING=" . ($_SERVER['QUERY_STRING'] ?? '') . " REQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . " GET=" . json_encode($_GET) . "\n",
+    FILE_APPEND
+);
+
 $config_path = __DIR__ . '/../../../config.json';
 $config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
 if (!is_array($config_data)) {
