@@ -495,7 +495,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
     $ms_state = $ms_nonce . '.' . hash_hmac('sha256', $ms_nonce, $ms_client_secret);
 
     // ต้องตรงกับ Redirect URI ที่ลงทะเบียนไว้ใน Azure App Registration เป๊ะๆ (รวมทั้ง https:// และ .php ต่อท้าย)
-    $ms_redirect_uri = 'https://' . $_SERVER['HTTP_HOST'] . '/api/auth/microsoft/callback.php';
+    $ms_redirect_uri = 'https://' . $_SERVER['HTTP_HOST'] . '/ms_callback.php';
 
     $ms_auth_url = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?' . http_build_query([
         'client_id'     => $ms_client_id,
@@ -994,7 +994,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
 
                     <div class="bg-blue-50/80 border border-blue-200/70 rounded-2xl p-3.5 text-[11px] text-blue-900 leading-relaxed">
                         Redirect URI ที่ต้องตั้งค่าใน Azure App Registration (เมนู Authentication) ให้ตรงกันเป๊ะๆ:<br>
-                        <code class="font-mono font-bold break-all">https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']); ?>/api/auth/microsoft/callback.php</code>
+                        <code class="font-mono font-bold break-all">https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']); ?>/ms_callback.php</code>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">

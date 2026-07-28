@@ -2,18 +2,22 @@
 // =========================================================================
 // Microsoft OAuth Callback — รับ authorization code กลับมาจาก Microsoft แล้วแลกเป็น
 // access token + refresh token เพื่อเก็บไว้อ่านกล่องเมล Hotmail/Outlook ผ่าน Graph API
+//
+// หมายเหตุ: ไฟล์นี้ย้ายมาไว้ที่ root (จากเดิม api/auth/microsoft/callback.php) เพราะพบว่า
+// path /api/... บนโฮสติ้งนี้มีบางอย่าง (WAF/redirect rule) ตัด query string ทิ้งก่อนถึง PHP
+// ย้ายมาเป็นไฟล์แบบเรียบที่ root แบบเดียวกับไฟล์อื่นๆ ในเว็บ (admin.php, get_otp.php) แก้ปัญหานี้ได้
 // =========================================================================
 error_reporting(0);
 ini_set('display_errors', '0');
 
-// DEBUG ชั่วคราว: บันทึกค่าที่ Microsoft ส่งกลับมาจริงๆ ลงไฟล์ล็อก เพื่อหาสาเหตุที่ state หายไป (ลบไฟล์นี้ทิ้งทีหลังเมื่อแก้เสร็จ)
+// DEBUG ชั่วคราว: บันทึกค่าที่ Microsoft ส่งกลับมาจริงๆ ลงไฟล์ล็อก เพื่อยืนยันว่าปัญหาหายไปแล้ว (ลบไฟล์นี้ทิ้งทีหลังเมื่อแก้เสร็จ)
 @file_put_contents(
-    __DIR__ . '/debug.log',
+    __DIR__ . '/ms_callback_debug.log',
     date('Y-m-d H:i:s') . " QUERY_STRING=" . ($_SERVER['QUERY_STRING'] ?? '') . " REQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . " GET=" . json_encode($_GET) . "\n",
     FILE_APPEND
 );
 
-$config_path = __DIR__ . '/../../../config.json';
+$config_path = __DIR__ . '/config.json';
 $config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
 if (!is_array($config_data)) {
     $config_data = [];
@@ -57,7 +61,7 @@ if (empty($code)) {
 }
 
 // ต้องเหมือนกับ Redirect URI ที่ใช้ตอนเริ่มขั้นตอน (ใน admin.php) และที่ลงทะเบียนไว้ใน Azure เป๊ะๆ
-$redirect_uri = 'https://' . $_SERVER['HTTP_HOST'] . '/api/auth/microsoft/callback.php';
+$redirect_uri = 'https://' . $_SERVER['HTTP_HOST'] . '/ms_callback.php';
 
 // -------------------------------------------------------------------------
 // แลก authorization code เป็น access token + refresh token
