@@ -67,7 +67,7 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
     'code'          => $code,
     'redirect_uri'  => $redirect_uri,
     'grant_type'    => 'authorization_code',
-    'scope'         => 'offline_access Mail.Read'
+    'scope'         => 'offline_access Mail.Read openid profile email'
 ]));
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_TIMEOUT, 10);
@@ -90,26 +90,44 @@ if (empty($access_token) || empty($refresh_token)) {
 }
 
 // -------------------------------------------------------------------------
-// เรียก Graph API เพื่อดูว่า token นี้เป็นของบัญชีอีเมลไหน
+// หาว่า token นี้เป็นของบัญชีอีเมลไหน โดยถอดรหัส id_token (JWT) ที่ Microsoft แถมมาให้เลย
+// (เชื่อถือได้กว่าเรียก Graph API /me ซึ่งบางครั้งคืน 401 UnknownError กับบัญชีส่วนบุคคลบางกรณี)
 // -------------------------------------------------------------------------
-$ch2 = curl_init();
-curl_setopt($ch2, CURLOPT_URL, 'https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName');
-curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $access_token]);
-curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch2, CURLOPT_TIMEOUT, 10);
-curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch2, CURLOPT_SSL_VERIFYHOST, false);
-$me_res = curl_exec($ch2);
-$me_http_code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
-curl_close($ch2);
-
-if ($me_http_code !== 200 || !$me_res) {
-    // DEBUG ชั่วคราว: โชว์ HTTP code และเนื้อหา error จริงจาก Graph API (ลบออกทีหลังเมื่อแก้เสร็จ)
-    redirect_with_error('ดึงข้อมูลบัญชีจาก Microsoft ไม่สำเร็จ (debug: http=' . $me_http_code . ' body=' . substr((string)$me_res, 0, 300) . ')');
+function decode_jwt_payload($jwt) {
+    $parts = explode('.', $jwt);
+    if (count($parts) < 2) return null;
+    $payload_b64 = strtr($parts[1], '-_', '+/');
+    $payload_b64 .= str_repeat('=', (4 - strlen($payload_b64) % 4) % 4);
+    $payload_json = base64_decode($payload_b64);
+    return $payload_json !== false ? json_decode($payload_json, true) : null;
 }
 
-$me_data = json_decode($me_res, true);
-$account_email = $me_data['mail'] ?? ($me_data['userPrincipalName'] ?? '');
+$account_email = '';
+$id_token = $token_data['id_token'] ?? '';
+if (!empty($id_token)) {
+    $claims = decode_jwt_payload($id_token);
+    $account_email = $claims['email'] ?? ($claims['preferred_username'] ?? '');
+}
+
+// สำรอง: ถ้า id_token ไม่มี email claim ให้ลองเรียก Graph API /me เป็นทางเลือกสุดท้าย
+if (empty($account_email)) {
+    $ch2 = curl_init();
+    curl_setopt($ch2, CURLOPT_URL, 'https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName');
+    curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $access_token]);
+    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch2, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch2, CURLOPT_SSL_VERIFYHOST, false);
+    $me_res = curl_exec($ch2);
+    $me_http_code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+    curl_close($ch2);
+
+    if ($me_http_code === 200 && $me_res) {
+        $me_data = json_decode($me_res, true);
+        $account_email = $me_data['mail'] ?? ($me_data['userPrincipalName'] ?? '');
+    }
+}
+
 if (empty($account_email)) {
     redirect_with_error('ไม่พบที่อยู่อีเมลของบัญชีนี้');
 }

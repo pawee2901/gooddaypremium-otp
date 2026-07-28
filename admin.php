@@ -502,7 +502,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
         'response_type' => 'code',
         'redirect_uri'  => $ms_redirect_uri,
         'response_mode' => 'query',
-        'scope'         => 'offline_access Mail.Read',
+        'scope'         => 'offline_access Mail.Read openid profile email',
         'state'         => $ms_state
     ]);
 
