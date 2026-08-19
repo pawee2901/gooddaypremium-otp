@@ -1,22 +1,11 @@
 <?php
-$config_path = __DIR__ . '/config.json';
-$config = [
-    'shop_name' => 'gooddaypremium',
-    'logo_path' => '/static/logo.jpg',
-    'disney_logo_path' => '',
-    'trueid_logo_path' => '',
-    'admin_username' => 'admin',
-    'admin_password' => 'admin1234'
-];
+require_once __DIR__ . '/config_store.php';
 
-if (file_exists($config_path)) {
-    $json_data = file_get_contents($config_path);
-    $decoded = json_decode($json_data, true);
-    if (is_array($decoded)) {
-        $config = array_merge($config, $decoded);
-    }
-} else {
-    file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+try {
+    $config = load_config();
+} catch (Throwable $e) {
+    http_response_code(500);
+    die('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบไฟล์ db_credentials.php บนโฮสต์: ' . htmlspecialchars($e->getMessage()));
 }
 ?>
 <!DOCTYPE html>
@@ -24,7 +13,7 @@ if (file_exists($config_path)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>gooddaypremiumotp - ค้นหารหัส OTP ตัวล่าสุด</title>
+    <title><?php echo htmlspecialchars($config['shop_name']); ?> - ค้นหารหัส OTP ตัวล่าสุด</title>
     <!-- Google Fonts for premium typography: Inter (English) and Mitr (Thai) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -288,11 +277,6 @@ if (file_exists($config_path)) {
             <div class="h-1.5 bg-black" id="accentBar"></div>
         </div>
 
-    </div>
-
-    <!-- Footer เครดิตร้าน -->
-    <div class="mt-8 text-center text-[10px] md:text-xs text-gray-400 font-light">
-        © 2026 gooddaypremiumotp. All rights reserved.
     </div>
 
     <script>

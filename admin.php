@@ -1,94 +1,15 @@
 <?php
 session_start();
 
-$config_path = __DIR__ . '/config.json';
-$config = [
-    'shop_name' => 'gooddaypremium',
-    'logo_path' => '/static/logo.jpg',
-    'disney_logo_path' => '',
-    'trueid_logo_path' => '',
-    'admin_username' => 'admin',
-    'admin_password' => 'admin1234',
-    'api_key_1' => 'sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1',
-    'api_key_2' => 'otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5',
-    'apps' => [
-        [
-            'id' => 'app_disney',
-            'name' => 'Disney+',
-            'code' => 'DN',
-            'logo_path' => '/static/logo_disney_1780413683.jpg',
-            'keywords' => 'disney',
-            'bg_color' => '#F0F7FF',
-            'border_color' => '#D6E9FF',
-            'active' => true
-        ],
-        [
-            'id' => 'app_trueid',
-            'name' => 'TrueID',
-            'code' => 'TM',
-            'logo_path' => '/static/logo_trueid_1780413707.jpg',
-            'keywords' => 'true',
-            'bg_color' => '#FFF5FA',
-            'border_color' => '#FFE2F3',
-            'active' => true
-        ]
-    ],
-    'imap_emails' => [
-        [
-            'id' => 'email_1',
-            'email' => 'amethystejenala@outlook.com',
-            'provider' => 'hotmail',
-            'host' => 'outlook.office365.com',
-            'port' => 993,
-            'password' => '',
-            'app_id' => 'all',
-            'active' => true
-        ],
-        [
-            'id' => 'email_2',
-            'email' => 'phakhbona@gmail.com',
-            'provider' => 'gmail',
-            'host' => 'imap.gmail.com',
-            'port' => 993,
-            'password' => '',
-            'app_id' => 'all',
-            'active' => true
-        ]
-    ],
-    'api_providers' => [
-        [
-            'id' => 'maily_space_1',
-            'name' => 'Maily Space Key 1',
-            'type' => 'maily',
-            'token' => 'sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1',
-            'active' => true
-        ],
-        [
-            'id' => 'maily_space_2',
-            'name' => 'Maily Space Key 2',
-            'type' => 'maily',
-            'token' => 'otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5',
-            'active' => true
-        ],
-        [
-            'id' => 'cloud_run_rdcw',
-            'name' => 'Cloud Run (RDCW)',
-            'type' => 'cloud_run',
-            'url' => 'https://getemails-wfudlrftlq-uc.a.run.app/getEmails',
-            'active' => true
-        ]
-    ]
-];
+// การตั้งค่าทั้งหมดเก็บใน MySQL ผ่าน config_store.php (เดิมเก็บเป็นไฟล์ config.json)
+require_once __DIR__ . '/config_store.php';
+$config_path = __DIR__ . '/config.json'; // เก็บชื่อตัวแปรไว้เผื่อโค้ดจุดอื่นอ้างอิง (ไม่ได้ใช้อ่าน/เขียนไฟล์แล้ว)
 
-// โหลดการตั้งค่าจากไฟล์ JSON
-if (file_exists($config_path)) {
-    $json_data = file_get_contents($config_path);
-    $decoded = json_decode($json_data, true);
-    if (is_array($decoded)) {
-        $config = array_merge($config, $decoded);
-    }
-} else {
-    file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+try {
+    $config = load_config();
+} catch (Throwable $e) {
+    http_response_code(500);
+    die('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบไฟล์ db_credentials.php บนโฮสต์: ' . htmlspecialchars($e->getMessage()));
 }
 
 // เช็คความปลอดภัยการล็อกอิน
@@ -142,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['api_key_1'])) $config['api_key_1'] = trim($_POST['api_key_1']);
         if (isset($_POST['api_key_2'])) $config['api_key_2'] = trim($_POST['api_key_2']);
 
-        if (file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+        if (save_config($config)) {
             echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);
         } else {
             http_response_code(500);
@@ -213,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['imap_emails'][] = $new_item;
         }
 
-        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        save_config($config);
         echo json_encode(['success' => true, 'message' => 'บันทึกอีเมล IMAP เรียบร้อยแล้ว', 'data' => $config['imap_emails']]);
         exit;
     }
@@ -227,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['imap_emails'] = array_values(array_filter($config['imap_emails'], function($item) use ($id) {
                 return $item['id'] !== $id && $item['email'] !== $id;
             }));
-            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($config);
         }
 
         echo json_encode(['success' => true, 'message' => 'ลบอีเมลเรียบร้อยแล้ว', 'data' => $config['imap_emails']]);
@@ -247,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 }
             }
-            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($config);
         }
 
         echo json_encode(['success' => true, 'message' => $active ? 'ปลดล็อกเปิดใช้งานอีเมลแล้ว' : 'ล็อกการใช้งานอีเมลเรียบร้อยแล้ว', 'data' => $config['imap_emails']]);
@@ -317,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['apps'][] = $app_data;
         }
 
-        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        save_config($config);
         echo json_encode(['success' => true, 'message' => 'บันทึกแอปพลิเคชันสำเร็จ', 'data' => $config['apps']]);
         exit;
     }
@@ -331,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['apps'] = array_values(array_filter($config['apps'], function($item) use ($id) {
                 return $item['id'] !== $id;
             }));
-            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($config);
         }
 
         echo json_encode(['success' => true, 'message' => 'ลบแอปพลิเคชันเรียบร้อยแล้ว', 'data' => $config['apps']]);
@@ -380,7 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['api_providers'][] = $item_data;
         }
 
-        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        save_config($config);
         echo json_encode(['success' => true, 'message' => 'บันทึก API Key สำเร็จ', 'data' => $config['api_providers']]);
         exit;
     }
@@ -394,7 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['api_providers'] = array_values(array_filter($config['api_providers'], function($item) use ($id) {
                 return $item['id'] !== $id;
             }));
-            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($config);
         }
 
         echo json_encode(['success' => true, 'message' => 'ลบ API Key เรียบร้อยแล้ว', 'data' => $config['api_providers']]);
@@ -433,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (move_uploaded_file($file['tmp_name'], $static_dir . $filename)) {
             $new_logo_path = '/static/' . $filename;
             $config['logo_path'] = $new_logo_path;
-            file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($config);
             echo json_encode(['success' => true, 'message' => 'อัปโหลดโลโก้สำเร็จ', 'logo_path' => $new_logo_path]);
         } else {
             http_response_code(500);
@@ -460,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $config['microsoft_oauth']['client_id'] = $ms_client_id;
         $config['microsoft_oauth']['client_secret'] = $ms_client_secret;
 
-        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        save_config($config);
         echo json_encode(['success' => true, 'message' => 'บันทึกการตั้งค่า Microsoft App สำเร็จ']);
         exit;
     }
