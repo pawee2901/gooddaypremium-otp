@@ -350,16 +350,21 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
                     $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
                     $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
                 } else {
-                    // บัญชีกลาง (Gmail Forwarding Central) — อีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
-                    // ไม่ใช่ใน header To: ตรงๆ จึงต้องดึง body มาค้นหาเสมอ (พฤติกรรมเดิม คงไว้เพื่อความถูกต้อง)
+                    // บัญชีกลาง (Gmail Forwarding Central) — เช็คจาก header (from/subject) ก่อนเหมือนกล่องเมลลูกค้าเอง
+                    // เพื่อข้ามฉบับที่หัวข้อ/ผู้ส่งไม่เกี่ยวกับแอปที่เลือกไปเลยโดยไม่ต้องดึง body (subject มักคงคำเดิมไว้แม้ถูก
+                    // forward ต่อ เช่น "Fwd: Your Netflix code") ตัวที่ผ่านตรงนี้เป็นฉบับล่าสุดของแอปนั้นในกล่อง (overview
+                    // ถูกเรียงใหม่สุดก่อนแล้ว) จึงดึง body แค่ฉบับนี้ไปเช็คอีเมลเป้าหมายต่อ ไม่ต้องดึงทุกฉบับในกล่องแบบเดิม
+                    // (ของเดิมดึง body ทุกฉบับก่อนเช็คเสมอ เพราะอีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
+                    // ไม่ใช่ใน header To: ตรงๆ — ยังต้องดึง body มาเช็คอีเมลเป้าหมายเหมือนเดิม แค่กรองด้วยแอปก่อนเพื่อลดจำนวนฉบับที่ต้องดึง)
+                    if (!matches_app($from_email, $subject, $app_name, '')) {
+                        continue;
+                    }
+
                     $mail_content = imap_extract_body($imap_conn, $msgno);
                     $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
                     $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
 
                     if (strpos($full_text, $lower_email) === false) {
-                        continue;
-                    }
-                    if (!matches_app($from_email, $subject, $app_name, $full_text)) {
                         continue;
                     }
                 }
