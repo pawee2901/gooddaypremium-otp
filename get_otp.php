@@ -50,6 +50,12 @@ try {
     exit;
 }
 
+// งบเวลาสำหรับไล่สแกนบัญชี IMAP ในคำขอนี้ (วินาที) — ถ้าเกินนี้แล้วยังไม่เจอ ให้หยุดค้นแล้วตอบกลับ "ยังไม่พบ" ทันที
+// ไม่ต้องรอไล่จนครบทุกบัญชี เพราะหน้าเว็บมี auto-poll ซ้ำทุก 5 วินาทีอยู่แล้ว (ดู startOTPPolling ใน index.php)
+// คำขอรอบถัดไปจะสลับไปเริ่มไล่จากบัญชีอื่นต่อ (ดู run_gmail_imap_fallback) ให้ท้ายที่สุดตรวจครบทุกบัญชีภายในไม่กี่รอบ
+// แทนที่จะรอจนครบในคำขอเดียวซึ่งอาจโดน proxy/PHP timeout ตัดกลางคันจนหน้าเว็บเจอ "Load failed"
+define('SEARCH_DEADLINE', microtime(true) + 4);
+
 $maily_api_url = "https://api.maily.space/mail/public/mails";
 $maily_tokens = [];
 if (isset($config_data['api_providers']) && is_array($config_data['api_providers'])) {
@@ -296,8 +302,9 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
     $imap_pass = $creds['password'];
 
     // จำกัดเวลาเชื่อมต่อ/อ่านข้อมูลต่อบัญชี ไม่ให้บัญชีที่เชื่อมต่อช้าหรือใช้งานไม่ได้ทำให้การค้นหาทั้งหมดค้างนาน
-    @imap_timeout(IMAP_OPENTIMEOUT, 5);
-    @imap_timeout(IMAP_READTIMEOUT, 5);
+    // (ตั้งให้สั้นกว่า SEARCH_DEADLINE เล็กน้อย เพื่อไม่ให้บัญชีแรกที่เจอปัญหาบัญชีเดียวกินงบเวลาของทั้งคำขอไปเกือบหมด)
+    @imap_timeout(IMAP_OPENTIMEOUT, 3);
+    @imap_timeout(IMAP_READTIMEOUT, 3);
 
     $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
     $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
@@ -322,6 +329,9 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
             usort($overviews, function($a, $b) { return ($b->msgno ?? 0) - ($a->msgno ?? 0); }); // ใหม่สุดก่อน
 
             foreach ($overviews as $ov) {
+                // เกินงบเวลารวมของคำขอนี้แล้ว (ดู SEARCH_DEADLINE) หยุดอ่านฉบับที่เหลือในบัญชีนี้ทันทีเพื่อให้ตอบกลับไว
+                if (microtime(true) > SEARCH_DEADLINE) break;
+
                 $msgno = isset($ov->msgno) ? (int)$ov->msgno : 0;
                 if (!$msgno) continue;
 
@@ -419,6 +429,15 @@ function run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, 
     if (empty($gmail_central)) {
         $gmail_central = [];
     }
+
+    // สลับบัญชีกลางที่เริ่มไล่ก่อนในแต่ละคำขอ (หมุนตามช่วงเวลาทุก 5 วินาที ให้พอดีจังหวะ auto-poll ของหน้าเว็บ)
+    // เพราะแต่ละคำขอมีงบเวลาจำกัด (SEARCH_DEADLINE) อาจไล่ไม่ครบทุกบัญชี — ถ้าเริ่มบัญชีแรกซ้ำทุกรอบ บัญชีท้ายๆ
+    // จะไม่มีทางถูกเช็คเลยถ้ามีจำนวนบัญชีเยอะ การหมุนจุดเริ่มแบบนี้ทำให้ท้ายที่สุดไล่ครบทุกบัญชีภายในไม่กี่รอบ poll
+    if (count($gmail_central) > 1) {
+        $rotate = intdiv((int) time(), 5) % count($gmail_central);
+        $gmail_central = array_merge(array_slice($gmail_central, $rotate), array_slice($gmail_central, 0, $rotate));
+    }
+
     foreach ($gmail_central as $gc) {
         $imap_accounts_to_check[] = $gc;
     }
@@ -429,6 +448,10 @@ function run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, 
 
     $all_found = [];
     foreach ($imap_accounts_to_check as $creds) {
+        // เกินงบเวลารวมของคำขอนี้แล้ว หยุดไล่บัญชีที่เหลือทันทีเพื่อให้ตอบกลับไว รอบ poll ถัดไปจะสลับไปเริ่มบัญชีอื่นต่อ
+        if (microtime(true) > SEARCH_DEADLINE) {
+            break;
+        }
         $is_direct_account = !empty($creds['__is_direct']);
         $account_found = scan_imap_account($creds, $is_direct_account, $app_name, $lower_email);
         if (!empty($account_found)) {
