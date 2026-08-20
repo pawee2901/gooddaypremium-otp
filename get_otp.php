@@ -104,6 +104,45 @@ function matches_app($from, $subject, $name, $body = '') {
     return (strpos($lower_from, $lower_app) !== false || strpos($lower_sub, $lower_app) !== false || strpos($lower_body, $lower_app) !== false);
 }
 
+// เดาแบบระมัดระวังว่า header (from/subject) นี้เป็นของแอปหลักอื่นที่ระบบรู้จักแน่ๆ (ไม่ใช่แอปที่กำลังค้นหาอยู่)
+// ใช้เพื่อข้ามการดึง body เฉพาะกรณีมั่นใจจริงๆ ว่าเจอคีย์เวิร์ดของแอปอื่นชัดเจนใน header เท่านั้น — ต่างจาก
+// matches_app() ที่ต้อง "เจอ" คีย์เวิร์ดของแอปที่ค้นหาถึงจะถือว่าตรง ฟังก์ชันนี้ตรงข้ามคือ "ไม่เจอคีย์เวิร์ดของแอปอื่นเลย"
+// ถึงจะถือว่ายังไม่แน่ชัด (เผื่อไว้) เพราะบางเทมเพลตอีเมล (เช่น True บางแบบ) เขียน subject เป็นภาษาไทยล้วนไม่มีชื่อ
+// แอปเป็นภาษาอังกฤษเลย ถ้าใช้ matches_app() ตรงๆ มาข้าม body จะพลาดอีเมลจริงของแอปนั้นไปเฉยๆ (ต้องพึ่ง body ถึงจะรู้แน่ชัด)
+function is_clearly_other_known_app($from, $subject, $app_name) {
+    $families = [
+        ['netflix'],
+        ['disney'],
+        ['true'],
+        ['chat', 'openai', 'gpt'],
+        ['prime', 'amazon'],
+    ];
+    $lower_from = strtolower($from);
+    $lower_sub = strtolower($subject);
+    $lower_app = strtolower($app_name);
+
+    // หาก่อนว่าแอปที่กำลังค้นหาเองเข้าครอบครัวคีย์เวิร์ดไหนบ้าง (จะได้ไม่เอาคีย์เวิร์ดของตัวเองมานับเป็น "แอปอื่น")
+    $own_family_idx = null;
+    foreach ($families as $idx => $keywords) {
+        foreach ($keywords as $kw) {
+            if (strpos($lower_app, $kw) !== false) {
+                $own_family_idx = $idx;
+                break 2;
+            }
+        }
+    }
+
+    foreach ($families as $idx => $keywords) {
+        if ($idx === $own_family_idx) continue;
+        foreach ($keywords as $kw) {
+            if (strpos($lower_from, $kw) !== false || strpos($lower_sub, $kw) !== false) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // ฟังก์ชันแปลงรูปแบบเวลา UTC จาก Maily Space เป็นเวลาไทยท้องถิ่น (GMT+07:00)
 function parse_utc_timestamp_to_thai($ts_str) {
     try {
@@ -350,13 +389,13 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
                     $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
                     $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
                 } else {
-                    // บัญชีกลาง (Gmail Forwarding Central) — เช็คจาก header (from/subject) ก่อนเหมือนกล่องเมลลูกค้าเอง
-                    // เพื่อข้ามฉบับที่หัวข้อ/ผู้ส่งไม่เกี่ยวกับแอปที่เลือกไปเลยโดยไม่ต้องดึง body (subject มักคงคำเดิมไว้แม้ถูก
-                    // forward ต่อ เช่น "Fwd: Your Netflix code") ตัวที่ผ่านตรงนี้เป็นฉบับล่าสุดของแอปนั้นในกล่อง (overview
-                    // ถูกเรียงใหม่สุดก่อนแล้ว) จึงดึง body แค่ฉบับนี้ไปเช็คอีเมลเป้าหมายต่อ ไม่ต้องดึงทุกฉบับในกล่องแบบเดิม
-                    // (ของเดิมดึง body ทุกฉบับก่อนเช็คเสมอ เพราะอีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
-                    // ไม่ใช่ใน header To: ตรงๆ — ยังต้องดึง body มาเช็คอีเมลเป้าหมายเหมือนเดิม แค่กรองด้วยแอปก่อนเพื่อลดจำนวนฉบับที่ต้องดึง)
-                    if (!matches_app($from_email, $subject, $app_name, '')) {
+                    // บัญชีกลาง (Gmail Forwarding Central) — ข้ามการดึง body เฉพาะฉบับที่ header (from/subject) บ่งชี้
+                    // ชัดเจนว่าเป็นของแอปหลักอื่นที่รู้จัก (เช่น เจอคำว่า netflix ขณะที่กำลังหา Disney) เพื่อลดจำนวนฉบับที่ต้อง
+                    // ดึง body ในกล่องที่มีเมลจากหลายแอปปนกัน — "ไม่เจอคีย์เวิร์ดของแอปที่ค้นหาใน header" ไม่ถือว่าข้าม เพราะ
+                    // บางเทมเพลต (เช่น True บางแบบ) subject เป็นภาษาไทยล้วน ไม่มีชื่อแอปเป็นอังกฤษเลย ต้องพึ่ง body ถึงจะรู้แน่ชัด
+                    // (อีเมลเป้าหมายของลูกค้าเองก็มักฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา ไม่ใช่ใน header To: ตรงๆ จึงยังต้องดึง body
+                    // มาเช็คอีเมลเป้าหมายอยู่ดีเมื่อไม่ข้าม)
+                    if (is_clearly_other_known_app($from_email, $subject, $app_name)) {
                         continue;
                     }
 
