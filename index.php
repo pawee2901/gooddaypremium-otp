@@ -1,21 +1,30 @@
 <?php
-require_once __DIR__ . '/config_store.php';
+$config_path = __DIR__ . '/config.json';
+$config = [
+    'shop_name' => 'gooddaypremium',
+    'logo_path' => '/static/logo.jpg',
+    'disney_logo_path' => '',
+    'trueid_logo_path' => '',
+    'admin_username' => 'admin',
+    'admin_password' => 'admin1234'
+];
 
-try {
-    $config = load_config();
-} catch (Throwable $e) {
-    http_response_code(500);
-    die('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบไฟล์ db_credentials.php บนโฮสต์: ' . htmlspecialchars($e->getMessage()));
+if (file_exists($config_path)) {
+    $json_data = file_get_contents($config_path);
+    $decoded = json_decode($json_data, true);
+    if (is_array($decoded)) {
+        $config = array_merge($config, $decoded);
+    }
+} else {
+    file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
-// พื้นหลัง + ข้อความหน้าร้านที่แอดมินตั้งไว้ (ยังไม่ได้ตั้ง = หน้าตาเดิม)
-$shop_page = shop_page_options();
 ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title><?php echo htmlspecialchars($config['shop_name']); ?> - ค้นหารหัส OTP ตัวล่าสุด</title>
+    <title>gooddaypremiumotp - ค้นหารหัส OTP ตัวล่าสุด</title>
     <!-- Google Fonts for premium typography: Inter (English) and Mitr (Thai) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,7 +79,7 @@ $shop_page = shop_page_options();
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 bg-white selection:bg-black selection:text-white" style="<?php echo htmlspecialchars(shop_bg_style($shop_page)); ?>">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 bg-white selection:bg-black selection:text-white">
 
     <!-- Container หลัก (Fully Responsive) -->
     <div class="w-full max-w-lg flex flex-col gap-6">
@@ -90,7 +99,7 @@ $shop_page = shop_page_options();
                 
                 <div class="space-y-1">
                     <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight leading-none"><?php echo htmlspecialchars($config['shop_name']); ?></h1>
-                    <p class="text-xs font-semibold text-gray-400 tracking-wide"><?php echo htmlspecialchars(shop_text($shop_page, 'tagline')); ?></p>
+                    <p class="text-xs font-semibold text-gray-400 tracking-wide">กดรับ otp เองได้ ตลอด 24 ชั่วโมง</p>
                 </div>
             </div>
             
@@ -102,7 +111,7 @@ $shop_page = shop_page_options();
         <!-- ========================================== -->
         <div id="appSelectionScreen" class="space-y-6 transition-all duration-500">
             <div class="text-center">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight"><?php echo htmlspecialchars(shop_text($shop_page, 'apps_title')); ?></h2>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">เลือกแอปที่ต้องการรับรหัสยืนยัน</h2>
             </div>
 
             <!-- Grid ของปุ่มเลือกแอป (สไตล์น่ารักมินิมอลสีขาวพาสเทล - แสดงผลตามการตั้งค่าแบบ Dynamic) -->
@@ -158,8 +167,8 @@ $shop_page = shop_page_options();
                 </div>
 
                 <div class="text-center space-y-1">
-                    <h2 class="text-base md:text-lg font-bold text-gray-800"><?php echo htmlspecialchars(shop_text($shop_page, 'search_title')); ?></h2>
-                    <p class="text-xs md:text-sm text-gray-500"><?php echo htmlspecialchars(shop_text($shop_page, 'search_sub')); ?></p>
+                    <h2 class="text-base md:text-lg font-bold text-gray-800">ค้นหารหัสผ่านทางอีเมล</h2>
+                    <p class="text-xs md:text-sm text-gray-500">ใส่ที่อยู่อีเมลของคุณเพื่อดึงรหัสยืนยันตัวล่าสุดได้ทันที</p>
                 </div>
 
                 <div class="space-y-4">
@@ -176,7 +185,7 @@ $shop_page = shop_page_options();
                     <button id="searchBtn" onclick="fetchOTP()" 
                             class="w-full bg-black hover:bg-zinc-800 text-white font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm active:scale-[0.98] text-sm">
                         <i id="btnIcon" class="fa-solid fa-magnifying-glass"></i>
-                        <span id="btnText"><?php echo htmlspecialchars(shop_text($shop_page, 'button')); ?></span>
+                        <span id="btnText">ค้นหารหัสยืนยัน (OTP)</span>
                     </button>
                 </div>
 
@@ -279,6 +288,11 @@ $shop_page = shop_page_options();
             <div class="h-1.5 bg-black" id="accentBar"></div>
         </div>
 
+    </div>
+
+    <!-- Footer เครดิตร้าน -->
+    <div class="mt-8 text-center text-[10px] md:text-xs text-gray-400 font-light">
+        © 2026 gooddaypremiumotp. All rights reserved.
     </div>
 
     <script>
@@ -631,18 +645,19 @@ $shop_page = shop_page_options();
 
                 renderBrandAssets(appName);
 
-                if (!(data.success && data.emails && data.emails.length > 0)) {
-                    // ไม่พบรหัส → แจ้งทันทีให้กดค้นหาอีกครั้ง (ไม่ค้างหน้ารอ)
+                if (data.success && data.emails && data.emails.length > 0) {
+                    currentEmails = data.emails;
+                    renderEmails(data.emails, appName);
+                    // แสดงหน้าดีเทลและคัดลอกรหัสทันที
+                    openEmailDetail(0);
+                    copyOTP();
+                } else {
+                    // หากไม่พบจดหมายในวิแรก: ให้เปลี่ยนหน้ามาหน้ารอรับรหัส Dynamic แบบไหลลื่น!
                     currentEmails = [];
-                    statusBox.classList.add('hidden');
-                    showError(data.message || 'ไม่พบรหัส OTP ล่าสุดของอีเมลนี้ กรุณากดขอรหัสจากแอปปลายทางก่อน แล้วกดค้นหาอีกครั้งค่ะ', 'ไม่พบรหัส — กดค้นหาอีกครั้งได้เลย');
-                    return;
+                    renderEmails([], appName);
+                    // เริ่มกระบวนการสืบค้นสดอัปเดตอัตโนมัติ (Live Polling)
+                    startOTPPolling(emailInput);
                 }
-                currentEmails = data.emails;
-                renderEmails(data.emails, appName);
-                // แสดงหน้าดีเทลและคัดลอกรหัสทันที
-                openEmailDetail(0);
-                copyOTP();
 
                 setTimeout(() => {
                     statusBox.classList.add('hidden');
@@ -662,10 +677,9 @@ $shop_page = shop_page_options();
             }
         }
 
-        function showError(message, title) {
+        function showError(message) {
             const errorBox = document.getElementById('errorBox');
             const errorMessage = document.getElementById('errorMessage');
-            document.getElementById('errorTitle').innerText = title || 'เกิดข้อผิดพลาด';
             errorMessage.innerText = message;
             errorBox.classList.remove('hidden');
         }

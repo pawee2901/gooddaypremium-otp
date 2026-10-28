@@ -11,11 +11,3 @@ package-lock.json
 # config.json คือไฟล์ข้อมูลจริงที่แก้ไขผ่านหน้า Admin บนเว็บโดยตรง (อีเมล/รหัสผ่าน/แอป/ผู้ใช้แอดมิน)
 # ห้าม track ใน git เพราะทุกครั้งที่ deploy จะเขียนทับค่าที่แอดมินตั้งไว้บนเว็บจริงด้วยค่าที่ commit ไว้เก่ากว่า
 config.json
-config.backup.json
-
-# db_credentials.php มีรหัสผ่านฐานข้อมูล MySQL จริง — อัปโหลดเองครั้งเดียวผ่าน Hostinger File Manager
-# ห้าม commit ขึ้น git เด็ดขาด (ดูตัวอย่างที่ db_credentials.example.php)
-db_credentials.php
-
-# seed_data_real.sql มีรหัสผ่านอีเมล/API key จริง ใช้ import ผ่าน phpMyAdmin เท่านั้น ห้าม commit
-seed_data_real.sql

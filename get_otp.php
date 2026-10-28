@@ -37,97 +37,24 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // =========================================================================
 // 2. การตั้งค่าการเชื่อมต่อ API จริง (Maily Space & Cloud Run)
 // =========================================================================
-require_once __DIR__ . '/config_store.php';
-$config_path = __DIR__ . '/config.json'; // เก็บชื่อตัวแปรไว้เผื่อโค้ดจุดอื่นอ้างอิง (ไม่ได้ใช้อ่าน/เขียนไฟล์แล้ว)
-
-try {
-    $config_data = load_config();
-} catch (Throwable $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบไฟล์ db_credentials.php บนโฮสต์'
-    ]);
-    exit;
-}
-
-// งบเวลาสำหรับไล่สแกนบัญชี IMAP ในคำขอนี้ (วินาที) — ถ้าเกินนี้แล้วยังไม่เจอ ให้หยุดค้นแล้วตอบกลับ "ยังไม่พบ" ทันที
-// ไม่ต้องรอไล่จนครบทุกบัญชี เพราะหน้าเว็บมี auto-poll ซ้ำทุก 5 วินาทีอยู่แล้ว (ดู startOTPPolling ใน index.php)
-// คำขอรอบถัดไปจะสลับไปเริ่มไล่จากบัญชีอื่นต่อ (ดู run_gmail_imap_fallback) ให้ท้ายที่สุดตรวจครบทุกบัญชีภายในไม่กี่รอบ
-// แทนที่จะรอจนครบในคำขอเดียวซึ่งอาจโดน proxy/PHP timeout ตัดกลางคันจนหน้าเว็บเจอ "Load failed"
-define('SEARCH_DEADLINE', microtime(true) + 4);
+$config_path = __DIR__ . '/config.json';
+$config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
 
 $maily_api_url = "https://api.maily.space/mail/public/mails";
 $maily_tokens = [];
 if (isset($config_data['api_providers']) && is_array($config_data['api_providers'])) {
     foreach ($config_data['api_providers'] as $p) {
         if (!empty($p['token']) && ($p['type'] ?? 'maily') === 'maily') {
-            // ร้านมักวางมาพร้อมคำว่า "Bearer " → ตัดออก
-            $maily_tokens[] = preg_replace('/^bearer\s+/i', '', trim($p['token']));
+            $maily_tokens[] = trim($p['token']);
         }
     }
 }
 if (empty($maily_tokens)) {
-    $token_1 = $config_data['api_key_1'] ?? "";
-    $token_2 = $config_data['api_key_2'] ?? "";
+    $token_1 = $config_data['api_key_1'] ?? "sk_v1_jtv42y05jqab3e1is2xh85nfwuhnp5x1";
+    $token_2 = $config_data['api_key_2'] ?? "otp_key_live_c376c68baadf1927b8459663e1511cbabdd71e46442025d944c87afae2f741b5";
     $maily_tokens = array_values(array_filter([$token_1, $token_2]));
 }
 $cloud_run_url = "https://getemails-wfudlrftlq-uc.a.run.app/getEmails";
-
-// PIN 6 หลักของกล่อง Maily (ตั้งในหลังบ้าน แท็บตั้งค่า API) — กล่องที่ตั้ง PIN ไว้ใน maily.space ต้องส่ง PIN ไม่งั้น Maily ตอบ "กรุณาใส่ PIN"
-$maily_pins = site_option_get('maily_pins', []);
-if (!is_array($maily_pins)) $maily_pins = [];
-
-function maily_http($url, $headers, $post_body = null) {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    if ($post_body !== null) {
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_body);
-    }
-    $res = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    return [$res, $code];
-}
-
-function maily_is_v1_key($token) {
-    return (bool)preg_match('/^sk_v\d+_/i', (string)$token);
-}
-
-/**
- * ดึงรายการเมลของกล่อง Maily — คืน [response JSON รูปแบบเดิม {data:{mails:[]}}, http code, token ที่ใช้ได้]
- * - คีย์แบบใหม่ sk_v1_... (จาก maily.space/dashboard/api) ใช้ API v1: POST /v1/mails ส่ง apiKey + email ใน body
- * - Bearer token แบบเดิมใช้ /mail/public/mails · กล่องที่มี PIN ส่ง header X-Mailbox-Pin (อ่านด้วย PIN อย่างเดียวได้ ไม่ต้องมี token)
- */
-function maily_fetch_list($api_url, $query_params, $email, $tokens, $pin) {
-    $attempts = $pin !== '' ? array_merge([''], $tokens) : $tokens;
-    foreach ($attempts as $token) {
-        if (maily_is_v1_key($token)) {
-            list($res, $code) = maily_http('https://api.maily.space/v1/mails', ['Content-Type: application/json'],
-                json_encode(['apiKey' => $token, 'email' => strtolower($email), 'size' => 15, 'page' => 1]));
-            $j = $res ? json_decode($res, true) : null;
-            $mails = $j['mails'] ?? ($j['data']['mails'] ?? null);
-            if ($code === 200 && is_array($mails)) {
-                return [json_encode(['data' => ['mails' => $mails]]), 200, $token];
-            }
-            continue;
-        }
-        $headers = ['Content-Type: application/json'];
-        if ($token !== '') $headers[] = "Authorization: Bearer $token";
-        if ($pin !== '') $headers[] = "X-Mailbox-Pin: $pin";
-        list($res, $code) = maily_http("$api_url?$query_params", $headers);
-        if ($code === 200 && $res) {
-            $j = json_decode($res, true);
-            if (isset($j['data']['mails'])) return [$res, 200, $token];
-        }
-    }
-    return [false, 0, ''];
-}
 
 // ฟังก์ชันแปลงชื่อบริการเป็นรหัสย่อของระบบ RDCW Cloud Run
 function get_app_code($name) {
@@ -225,47 +152,23 @@ function extract_otp_code($html_body) {
     
     // ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อนเพื่อป้องกันการดึงรหัสสี/สไตล์ (เช่น #121212)
     $clean_html = preg_replace('/<(style|script)\b[^>]*>(.*?)<\/\1>/is', '', $html_body);
-    // แทนที่แท็กทุกตัวด้วยช่องว่าง แทนการใช้ strip_tags() ตรงๆ เพราะ strip_tags() ลบแท็กออกโดยไม่เว้นช่องว่าง
-    // ทำให้ข้อความจากคนละ element ถูกเชื่อมติดกัน เช่น "<div>786017</div>If you didn't..." จะกลายเป็น
-    // "786017If you didn't..." ซึ่งทำให้ regex ที่อาศัย \b (word boundary) ท้ายตัวเลขไม่ match เพราะ "7" กับ "I"
-    // ถือเป็นอักขระประเภทเดียวกัน (ไม่ใช่ขอบเขตคำ) ผลคือดึงรหัส OTP จริงไม่เจอ แล้ว fallback ไปดึงเลขอื่นในอีเมล
-    // (เช่น รหัสไปรษณีย์ในที่อยู่ท้ายอีเมล) มาผิดแทน
-    $plain_text = preg_replace('/<[^>]+>/', ' ', $clean_html);
-    // แปลง HTML entity ที่เหลือค้าง (เช่น &nbsp; ที่อีเมลบางเจ้าใช้คั่นระหว่างตัวเลข OTP แต่ละหลัก)
-    // ให้กลายเป็นอักขระจริง — strip_tags() ไม่แปลงให้อัตโนมัติ ปล่อยเป็นข้อความ "&nbsp;" ค้างไว้
-    $plain_text = html_entity_decode($plain_text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-    // 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษก่อนเสมอ โดยรับความยาวรหัสกว้าง 4-8 หลัก
-    //    (ไม่จำกัดที่ 6 หลักตายตัว เพราะแต่ละแอปความยาวรหัสไม่เท่ากัน เช่น Disney+ ใช้ 4 หลัก ส่วนแอปอื่นอาจ 6-8 หลัก
-    //    — \d{4,8} เป็น greedy อยู่แล้วจึงยังจับรหัส 6 หลักได้ครบเหมือนเดิมเมื่อมีจริง — ให้ความสำคัญกับคีย์เวิร์ดก่อนเสมอ
-    //    เพื่อกันดึงเลขอื่นที่ไม่ใช่ OTP จริงมาผิด เช่น ปี/รหัสอ้างอิง/เลขติดตามพัสดุที่อยู่ห่างจากคีย์เวิร์ด)
-    if (preg_match('/(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัส|โค้ด)(?:\s*(?:ของคุณ|ของท่าน))?\s*(?:คือ|:|\s)\s*(\d{4,8})\b/ui', $plain_text, $matches)) {
+    $plain_text = strip_tags($clean_html);
+    
+    // 1. ค้นหารูปแบบข้อความที่มีคีย์เวิร์ดนำหน้าภาษาไทย/อังกฤษเพื่อความแม่นยำสูงสุด (รองรับคำเชื่อม "ของคุณ/ของท่าน")
+    if (preg_match('/(?:รหัสยืนยัน|รหัสผ่านชั่วคราว|OTP|code|รหัส|โค้ด)(?:\s*(?:ของคุณ|ของท่าน))?\s*(?:คือ|:|\s)\s*(\d{4,8})/ui', $plain_text, $matches)) {
         return $matches[1];
     }
-
-    // 2. ถ้าไม่เจอรูปแบบมีคีย์เวิร์ดนำหน้าเลย (เช่น คีย์เวิร์ดกับตัวเลขอยู่ห่างกันเกินไปในประโยค) ค่อย fallback
-    //    ไปหารหัส 6 หลักติดกัน (ความยาวที่พบบ่อยที่สุดของ OTP) ที่ไหนก็ได้ในเนื้อหา
+    
+    // 2. ตรวจสอบรหัส 6 หลักติดกัน (เป็นหลักทั่วไปของ OTP)
     if (preg_match('/\b\d{6}\b/', $plain_text, $matches)) {
         return $matches[0];
     }
-
-    // 2.5 บางอีเมล (เช่น Tidal) ดีไซน์รหัส OTP เป็นกล่องแยกทีละหลัก ทำให้หลังแกะ HTML ออก
-    //     ตัวเลขแต่ละหลักมีช่องว่าง/ขึ้นบรรทัดใหม่ (จำนวนไม่แน่นอน) คั่นกลาง เช่น "3 9 1 6 5 0" จับเป็นก้อนเดียวไม่ได้
-    //     รวมช่องว่างทุกแบบ (space/tab/newline ติดกันกี่ตัวก็ได้) ให้เหลือช่องว่างเดียวก่อน แล้วค่อยหาก้อน 6 หลักที่มีช่องว่างคั่นได้สูงสุดหลักละ 1 ช่อง
-    //     เช็คแพทเทิร์นนี้ก่อน fallback ไปหาเลขอื่น เพื่อกันดึงเลขที่ไม่ใช่ OTP (เช่น ที่อยู่/รหัสไปรษณีย์ท้ายอีเมล) มาผิด
-    $normalized_text = preg_replace('/\s+/u', ' ', $plain_text);
-    if (preg_match('/\b\d(?:[ ]?\d){5}\b/', $normalized_text, $matches)) {
-        $spaced_code = preg_replace('/\D/', '', $matches[0]);
-        if (strlen($spaced_code) === 6) {
-            return $spaced_code;
-        }
-    }
-
-    // 3. สุดท้ายจริงๆ ถ้ายังไม่เจออะไรเลย ค่อยตรวจสอบรหัส 4-8 หลักอื่นๆ ที่ไหนก็ได้ในเนื้อหา
+    
+    // 3. ตรวจสอบรหัส 4-8 หลักอื่นๆ
     if (preg_match('/\b\d{4,8}\b/', $plain_text, $matches)) {
         return $matches[0];
     }
-
+    
     return null;
 }
 
@@ -275,8 +178,7 @@ function extract_ref_code($html_body) {
 
     // ลบเนื้อหาภายในแท็ก style และ script ออกทั้งหมดก่อน
     $clean_html = preg_replace('/<(style|script)\b[^>]*>(.*?)<\/\1>/is', '', $html_body);
-    // แทนที่แท็กทุกตัวด้วยช่องว่าง (เหตุผลเดียวกับใน extract_otp_code) กันข้อความจากคนละ element เชื่อมติดกัน
-    $plain_text = preg_replace('/<[^>]+>/', ' ', $clean_html);
+    $plain_text = strip_tags($clean_html);
 
     if (preg_match('/(?:รหัสอ้างอิง|อ้างอิง|Ref|Reference)\s*(?:คือ|:|\s)\s*([A-Za-z0-9]{4,10})/ui', $plain_text, $matches)) {
         return $matches[1];
@@ -359,9 +261,8 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
     $imap_pass = $creds['password'];
 
     // จำกัดเวลาเชื่อมต่อ/อ่านข้อมูลต่อบัญชี ไม่ให้บัญชีที่เชื่อมต่อช้าหรือใช้งานไม่ได้ทำให้การค้นหาทั้งหมดค้างนาน
-    // (ตั้งให้สั้นกว่า SEARCH_DEADLINE เล็กน้อย เพื่อไม่ให้บัญชีแรกที่เจอปัญหาบัญชีเดียวกินงบเวลาของทั้งคำขอไปเกือบหมด)
-    @imap_timeout(IMAP_OPENTIMEOUT, 3);
-    @imap_timeout(IMAP_READTIMEOUT, 3);
+    @imap_timeout(IMAP_OPENTIMEOUT, 5);
+    @imap_timeout(IMAP_READTIMEOUT, 5);
 
     $mailbox_str = "{" . $imap_host . ":" . $imap_port . "/imap/ssl/novalidate-cert}INBOX";
     $imap_conn = @imap_open($mailbox_str, $imap_user, $imap_pass, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
@@ -386,9 +287,6 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
             usort($overviews, function($a, $b) { return ($b->msgno ?? 0) - ($a->msgno ?? 0); }); // ใหม่สุดก่อน
 
             foreach ($overviews as $ov) {
-                // เกินงบเวลารวมของคำขอนี้แล้ว (ดู SEARCH_DEADLINE) หยุดอ่านฉบับที่เหลือในบัญชีนี้ทันทีเพื่อให้ตอบกลับไว
-                if (microtime(true) > SEARCH_DEADLINE) break;
-
                 $msgno = isset($ov->msgno) ? (int)$ov->msgno : 0;
                 if (!$msgno) continue;
 
@@ -418,9 +316,7 @@ function scan_imap_account($creds, $is_direct_account, $app_name, $lower_email) 
                     $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
                 } else {
                     // บัญชีกลาง (Gmail Forwarding Central) — อีเมลเป้าหมายของลูกค้าอาจฝังอยู่ในเนื้อหาที่ถูกส่งต่อมา
-                    // ไม่ใช่ใน header To: ตรงๆ จึงต้องดึง body มาค้นหาเสมอ (พฤติกรรมเดิม คงไว้เพื่อความถูกต้อง — เคยลองใส่
-                    // header-prefilter แบบเดียวกับกล่องเมลลูกค้าเองเพื่อลดเวลาสแกน แต่ทำให้พลาดอีเมลจริงที่ subject/from
-                    // ไม่ได้เขียนชื่อแอปเป็นภาษาอังกฤษตรงๆ เช่น เทมเพลต True บางแบบที่ subject เป็นภาษาไทยล้วน จึงเอาออก)
+                    // ไม่ใช่ใน header To: ตรงๆ จึงต้องดึง body มาค้นหาเสมอ (พฤติกรรมเดิม คงไว้เพื่อความถูกต้อง)
                     $mail_content = imap_extract_body($imap_conn, $msgno);
                     $body = $mail_content['html'] !== '' ? $mail_content['html'] : $mail_content['plain'];
                     $full_text = strtolower($subject . ' ' . $from_email . ' ' . $to_email . ' ' . $body);
@@ -484,17 +380,11 @@ function run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, 
         }
     }
     if (empty($gmail_central)) {
-        $gmail_central = [];
+        $gmail_central = [
+            ['email' => 'jj8168902@gmail.com', 'password' => 'wlfeoxoroayxoken', 'host' => 'imap.gmail.com', 'port' => 993],
+            ['email' => 'phakhbona@gmail.com', 'password' => 'gtxlslpvzosnztrt', 'host' => 'imap.gmail.com', 'port' => 993]
+        ];
     }
-
-    // สลับบัญชีกลางที่เริ่มไล่ก่อนในแต่ละคำขอ (หมุนตามช่วงเวลาทุก 5 วินาที ให้พอดีจังหวะ auto-poll ของหน้าเว็บ)
-    // เพราะแต่ละคำขอมีงบเวลาจำกัด (SEARCH_DEADLINE) อาจไล่ไม่ครบทุกบัญชี — ถ้าเริ่มบัญชีแรกซ้ำทุกรอบ บัญชีท้ายๆ
-    // จะไม่มีทางถูกเช็คเลยถ้ามีจำนวนบัญชีเยอะ การหมุนจุดเริ่มแบบนี้ทำให้ท้ายที่สุดไล่ครบทุกบัญชีภายในไม่กี่รอบ poll
-    if (count($gmail_central) > 1) {
-        $rotate = intdiv((int) time(), 5) % count($gmail_central);
-        $gmail_central = array_merge(array_slice($gmail_central, $rotate), array_slice($gmail_central, 0, $rotate));
-    }
-
     foreach ($gmail_central as $gc) {
         $imap_accounts_to_check[] = $gc;
     }
@@ -505,10 +395,6 @@ function run_gmail_imap_fallback($config_data, $direct_imap_account, $app_name, 
 
     $all_found = [];
     foreach ($imap_accounts_to_check as $creds) {
-        // เกินงบเวลารวมของคำขอนี้แล้ว หยุดไล่บัญชีที่เหลือทันทีเพื่อให้ตอบกลับไว รอบ poll ถัดไปจะสลับไปเริ่มบัญชีอื่นต่อ
-        if (microtime(true) > SEARCH_DEADLINE) {
-            break;
-        }
         $is_direct_account = !empty($creds['__is_direct']);
         $account_found = scan_imap_account($creds, $is_direct_account, $app_name, $lower_email);
         if (!empty($account_found)) {
@@ -570,13 +456,13 @@ function scan_ms_graph_account(&$config_data, $config_path, $creds, $app_name) {
         return [];
     }
 
-    // บันทึก Refresh Token ใหม่กลับเข้าฐานข้อมูลทันที (ถ้า Microsoft ออกตัวใหม่มาให้)
+    // บันทึก Refresh Token ใหม่กลับเข้า config.json ทันที (ถ้า Microsoft ออกตัวใหม่มาให้)
     if (!empty($token_data['refresh_token']) && $token_data['refresh_token'] !== $refresh_token) {
         if (isset($config_data['imap_emails']) && is_array($config_data['imap_emails'])) {
             foreach ($config_data['imap_emails'] as $idx => $item) {
                 if (strtolower($item['email'] ?? '') === strtolower($creds['email'] ?? '') && ($item['provider'] ?? '') === 'microsoft_graph') {
                     $config_data['imap_emails'][$idx]['refresh_token'] = $token_data['refresh_token'];
-                    @save_config($config_data);
+                    @file_put_contents($config_path, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                     break;
                 }
             }
@@ -823,8 +709,36 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
         "domainId" => $domain_id
     ]);
     
-    $maily_pin = isset($maily_pins[strtolower($target_maily_email)]) ? (string)$maily_pins[strtolower($target_maily_email)] : '';
-    list($response, $http_code, $working_token) = maily_fetch_list($maily_api_url, $query_params, $target_maily_email, $maily_tokens, $maily_pin);
+    $response = false;
+    $http_code = 0;
+    $working_token = "";
+    
+    foreach ($maily_tokens as $token) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $token",
+            "Content-Type: application/json"
+        ]);
+        
+        $res = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($code === 200 && $res) {
+            $test_data = json_decode($res, true);
+            if (isset($test_data['data']['mails'])) {
+                $response = $res;
+                $http_code = $code;
+                $working_token = $token;
+                break;
+            }
+        }
+    }
 
     if ($http_code === 200 && $response) {
         $data = json_decode($response, true);
@@ -834,7 +748,7 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
             $html_body = $mail['html'] ?? '';
             
             // หากเนื้อหา html ว่างเปล่า ให้ดึงรายละเอียดจดหมาย (Detail API) ล่วงหน้า
-            if (empty($html_body) && !empty($mail['id']) && !maily_is_v1_key($working_token)) {
+            if (empty($html_body) && !empty($mail['id'])) {
                 $mail_id = $mail['id'];
                 $detail_params = http_build_query([
                     "accountName" => $account_name,
@@ -848,7 +762,10 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
                 curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, array_values(array_filter(["Content-Type: application/json", $working_token !== '' ? "Authorization: Bearer $working_token" : '', $maily_pin !== '' ? "X-Mailbox-Pin: $maily_pin" : ''])));
+                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
+                    "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
+                    "Content-Type: application/json"
+                ]);
                 $detail_response = curl_exec($ch_detail);
                 curl_close($ch_detail);
                 

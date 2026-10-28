@@ -10,17 +10,15 @@
 error_reporting(0);
 ini_set('display_errors', '0');
 
-require_once __DIR__ . '/config_store.php';
+$config_path = __DIR__ . '/config.json';
+$config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
+if (!is_array($config_data)) {
+    $config_data = [];
+}
 
 function redirect_with_error($message) {
     header('Location: /admin.php?ms_error=' . urlencode($message));
     exit;
-}
-
-try {
-    $config_data = load_config();
-} catch (Throwable $e) {
-    redirect_with_error('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบไฟล์ db_credentials.php บนโฮสต์');
 }
 
 // ผู้ใช้กดยกเลิก หรือ Microsoft ปฏิเสธคำขอ
@@ -164,7 +162,7 @@ if ($found_idx >= 0) {
     $config_data['imap_emails'][] = $new_item;
 }
 
-save_config($config_data);
+file_put_contents($config_path, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
 header('Location: /admin.php?ms_connected=' . urlencode($account_email));
 exit;
