@@ -323,6 +323,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
 
+    // --- Action: ตั้งค่าหน้าร้าน (พื้นหลัง + ข้อความ) — เก็บในตาราง site_options ไม่แตะตารางเดิม ---
+    if ($action === 'save_shop_page') {
+        header('Content-Type: application/json');
+        $page = shop_page_options();
+        $page['bg_type'] = (isset($_POST['bg_type']) && $_POST['bg_type'] === 'image') ? 'image' : 'color';
+        $bg_color = isset($_POST['bg_color']) ? trim($_POST['bg_color']) : '#ffffff';
+        $page['bg_color'] = preg_match('/^#[0-9a-fA-F]{6}$/', $bg_color) ? $bg_color : '#ffffff';
+        $texts = [];
+        foreach (array_keys(SHOP_PAGE_TEXTS) as $k) {
+            $v = isset($_POST['text_' . $k]) ? trim($_POST['text_' . $k]) : '';
+            if ($v !== '') $texts[$k] = function_exists('mb_substr') ? mb_substr($v, 0, 120) : substr($v, 0, 360);
+        }
+        $page['texts'] = $texts;
+        if (site_option_set('shop_page', $page)) {
+            echo json_encode(['success' => true, 'message' => 'บันทึกหน้าร้านเรียบร้อยแล้ว']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'บันทึกพื้นหลัง/ข้อความหน้าร้านไม่สำเร็จ (ฐานข้อมูลสร้างตาราง site_options ไม่ได้)']);
+        }
+        exit;
+    }
+
+    // --- Action: อัปโหลดรูปพื้นหลังหน้าร้าน ---
+    if ($action === 'upload_bg') {
+        header('Content-Type: application/json');
+        $file = $_FILES['bg'] ?? null;
+        $ext = $file ? strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) : '';
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK || !in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'กรุณาเลือกไฟล์รูปภาพ (png, jpg, gif, webp)']);
+            exit;
+        }
+        $filename = 'bg_custom_' . time() . '.' . $ext;
+        $static_dir = __DIR__ . '/static/';
+        if (!is_dir($static_dir)) mkdir($static_dir, 0755, true);
+        if (!move_uploaded_file($file['tmp_name'], $static_dir . $filename)) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'ไม่สามารถบันทึกไฟล์รูปภาพได้']);
+            exit;
+        }
+        $page = shop_page_options();
+        $page['bg_image'] = '/static/' . $filename;
+        $page['bg_type'] = 'image';
+        site_option_set('shop_page', $page);
+        echo json_encode(['success' => true, 'message' => 'อัปโหลดรูปพื้นหลังสำเร็จ', 'bg_image' => $page['bg_image']]);
+        exit;
+    }
+
+    // --- Action: ตั้ง/ลบ PIN 6 หลักของกล่อง Maily (pin ว่าง = ลบ) ---
+    if ($action === 'save_maily_pin') {
+        header('Content-Type: application/json');
+        $email = isset($_POST['email']) ? strtolower(trim($_POST['email'])) : '';
+        $pin = isset($_POST['pin']) ? preg_replace('/\D/', '', $_POST['pin']) : '';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'กรุณากรอกอีเมล Maily ให้ถูกต้อง']);
+            exit;
+        }
+        if ($pin !== '' && strlen($pin) !== 6) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'PIN กล่อง Maily ต้องเป็นตัวเลข 6 หลัก']);
+            exit;
+        }
+        $pins = site_option_get('maily_pins', []);
+        if (!is_array($pins)) $pins = [];
+        if ($pin === '') unset($pins[$email]); else $pins[$email] = $pin;
+        if (site_option_set('maily_pins', $pins)) {
+            echo json_encode(['success' => true, 'message' => $pin === '' ? 'ลบ PIN แล้ว' : 'บันทึก PIN กล่อง Maily แล้ว']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'บันทึก PIN ไม่สำเร็จ (ฐานข้อมูลสร้างตาราง site_options ไม่ได้)']);
+        }
+        exit;
+    }
+
     // --- Action: อัปโหลดโลโก้ร้าน ---
     if ($action === 'upload_logo') {
         header('Content-Type: application/json');
@@ -985,6 +1060,84 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     </div>
                 </div>
 
+                <?php $shop_page = shop_page_options(); ?>
+                <!-- พื้นหลังหน้าร้าน -->
+                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                    <div class="border-b border-gray-100 pb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900">
+                        <i class="fa-solid fa-image text-purple-600"></i>
+                        <span>พื้นหลังหน้าร้าน</span>
+                    </div>
+                    <input type="hidden" id="bgTypeInput" value="<?php echo $shop_page['bg_type']; ?>">
+                    <div class="inline-flex rounded-xl border border-gray-200 overflow-hidden">
+                        <button type="button" id="bgTypeColorBtn" onclick="setBgType('color')" class="px-4 py-2 text-xs font-bold <?php echo $shop_page['bg_type'] === 'color' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600'; ?>">สีพื้น</button>
+                        <button type="button" id="bgTypeImageBtn" onclick="setBgType('image')" class="px-4 py-2 text-xs font-bold <?php echo $shop_page['bg_type'] === 'image' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600'; ?>">รูปภาพ</button>
+                    </div>
+                    <div id="bgColorBox" class="flex items-center gap-2 <?php echo $shop_page['bg_type'] === 'color' ? '' : 'hidden'; ?>">
+                        <input type="color" id="bgColorInput" value="<?php echo htmlspecialchars($shop_page['bg_color']); ?>" class="w-11 h-9 p-0.5 rounded-xl border border-gray-200 cursor-pointer">
+                        <span class="text-[11px] text-gray-400">สีขาว (#ffffff) = หน้าตาเดิม</span>
+                    </div>
+                    <div id="bgImageBox" class="flex items-center gap-4 bg-gray-50/60 p-4 rounded-2xl border border-gray-100 <?php echo $shop_page['bg_type'] === 'image' ? '' : 'hidden'; ?>">
+                        <img id="bgImagePreview" src="<?php echo htmlspecialchars($shop_page['bg_image']); ?>" alt="" class="w-16 h-16 rounded-xl object-cover border border-gray-200 <?php echo $shop_page['bg_image'] ? '' : 'hidden'; ?>">
+                        <label for="bgFileInput" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-100 text-gray-700 font-bold text-xs px-3 py-1.5 rounded-xl border border-gray-200 cursor-pointer shadow-xs">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>อัปโหลดรูปพื้นหลัง</span>
+                        </label>
+                        <input type="file" id="bgFileInput" accept="image/*" class="hidden" onchange="uploadBgFile()">
+                    </div>
+                </div>
+
+                <!-- ข้อความบนหน้าร้าน -->
+                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                    <div class="border-b border-gray-100 pb-3 space-y-1">
+                        <div class="flex items-center gap-2 text-sm font-extrabold text-gray-900">
+                            <i class="fa-solid fa-font text-purple-600"></i>
+                            <span>ข้อความบนหน้าร้าน</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">แก้คำที่ลูกค้าเห็นได้เอง · เว้นว่าง = ใช้ข้อความเดิม (ตัวอย่างสีเทาในช่อง)</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <?php foreach (SHOP_PAGE_TEXTS as $tkey => $tdef): ?>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-600 pl-1"><?php echo htmlspecialchars($tdef[0]); ?></label>
+                            <input type="text" data-shop-text="<?php echo $tkey; ?>" maxlength="120"
+                                   value="<?php echo htmlspecialchars($shop_page['texts'][$tkey] ?? ''); ?>"
+                                   placeholder="<?php echo htmlspecialchars($tdef[1]); ?>"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- PIN กล่อง Maily -->
+                <?php $maily_pins_list = site_option_get('maily_pins', []); if (!is_array($maily_pins_list)) $maily_pins_list = []; ?>
+                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                    <div class="border-b border-gray-100 pb-3 space-y-1">
+                        <div class="flex items-center gap-2 text-sm font-extrabold text-gray-900">
+                            <i class="fa-solid fa-lock text-purple-600"></i>
+                            <span>PIN กล่อง Maily</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">กล่อง Maily ที่ตั้ง PIN ไว้ใน maily.space ต้องใส่ PIN 6 หลักที่นี่ ไม่งั้น Maily จะไม่ให้อ่านเมล (ใส่ PIN แล้วไม่ต้องมี API Key ก็อ่านได้)</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="email" id="mailyPinEmailInput" placeholder="อีเมล Maily เช่น shop01@lico.moe" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
+                        <input type="password" id="mailyPinInput" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="PIN 6 หลัก" class="sm:w-36 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono tracking-[0.3em] focus:ring-2 focus:ring-purple-600 outline-none">
+                        <button type="button" onclick="addMailyPin()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm"><i class="fa-solid fa-plus mr-1"></i>บันทึก PIN</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <?php if (empty($maily_pins_list)): ?>
+                        <div class="col-span-full text-center py-4 text-gray-400 text-xs">ยังไม่มีกล่องที่ตั้ง PIN</div>
+                        <?php else: foreach ($maily_pins_list as $pin_email => $pin_val): ?>
+                        <div class="border border-purple-200/60 bg-purple-50/40 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                            <span class="text-xs font-bold text-gray-800 truncate"><i class="fa-solid fa-lock text-purple-500 mr-1"></i><?php echo htmlspecialchars($pin_email); ?></span>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <span class="text-[11px] font-mono text-gray-400">••••••</span>
+                                <button type="button" onclick="deleteMailyPin('<?php echo htmlspecialchars($pin_email, ENT_QUOTES); ?>')" title="ลบ PIN" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center"><i class="fa-regular fa-trash-can text-xs"></i></button>
+                            </div>
+                        </div>
+                        <?php endforeach; endif; ?>
+                    </div>
+                </div>
+
                 <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
                     <div class="border-b border-gray-100 pb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900">
                         <i class="fa-solid fa-shield-halved text-purple-600"></i>
@@ -1168,7 +1321,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ประเภท API (Provider Type)</label>
                     <select id="apiKeyTypeInput" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none bg-white">
-                        <option value="maily">Maily Space API (Bearer Token)</option>
+                        <option value="maily">Maily Space API (API Key sk_v1_... หรือ Bearer Token)</option>
                         <option value="cloud_run">Cloud Run API (RDCW Co., Ltd.)</option>
                         <option value="custom">Custom Webhook API</option>
                     </select>
@@ -1559,7 +1712,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                 const res = await fetch('admin.php?action=update', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (data.success) {
-                    showNotification('บันทึกการตั้งค่าร้านค้าและรหัสผ่านเรียบร้อยแล้วค่ะ');
+                    const pageOk = await saveShopPage();
+                    showNotification(pageOk ? 'บันทึกการตั้งค่าร้านค้าและรหัสผ่านเรียบร้อยแล้วค่ะ' : 'บันทึกชื่อร้าน/รหัสผ่านแล้ว แต่พื้นหลัง/ข้อความหน้าร้านยังไม่ถูกบันทึก');
                     document.getElementById('headerShopName').innerText = shop_name;
                     document.getElementById('newUsernameInput').value = '';
                     document.getElementById('newPasswordInput').value = '';
@@ -1570,6 +1724,80 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                 alert('เกิดความขัดข้องในการบันทึกข้อมูล');
             }
         }
+        // --- หน้าร้าน: พื้นหลัง + ข้อความ (บันทึกพร้อมปุ่ม "บันทึกการตั้งค่าทั้งหมด") ---
+        function setBgType(type) {
+            document.getElementById('bgTypeInput').value = type;
+            document.getElementById('bgColorBox').classList.toggle('hidden', type !== 'color');
+            document.getElementById('bgImageBox').classList.toggle('hidden', type !== 'image');
+            document.getElementById('bgTypeColorBtn').className = 'px-4 py-2 text-xs font-bold ' + (type === 'color' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600');
+            document.getElementById('bgTypeImageBtn').className = 'px-4 py-2 text-xs font-bold ' + (type === 'image' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600');
+        }
+        async function saveShopPage() {
+            const formData = new FormData();
+            formData.append('bg_type', document.getElementById('bgTypeInput').value);
+            formData.append('bg_color', document.getElementById('bgColorInput').value);
+            document.querySelectorAll('[data-shop-text]').forEach((el) => formData.append('text_' + el.dataset.shopText, el.value));
+            try {
+                const res = await fetch('admin.php?action=save_shop_page', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!data.success) alert(data.message || 'บันทึกหน้าร้านไม่สำเร็จ');
+                return !!data.success;
+            } catch (err) {
+                alert('บันทึกหน้าร้านไม่สำเร็จ');
+                return false;
+            }
+        }
+        async function uploadBgFile() {
+            const input = document.getElementById('bgFileInput');
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('bg', input.files[0]);
+            try {
+                const res = await fetch('admin.php?action=upload_bg', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('bgImagePreview').src = data.bg_image;
+                    document.getElementById('bgImagePreview').classList.remove('hidden');
+                    setBgType('image');
+                    showNotification('อัปโหลดรูปพื้นหลังเรียบร้อยแล้วค่ะ');
+                } else {
+                    alert(data.message || 'อัปโหลดรูปไม่สำเร็จ');
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดเครือข่ายระหว่างอัปโหลด');
+            }
+            input.value = '';
+        }
+
+        // --- PIN กล่อง Maily ---
+        async function saveMailyPin(email, pin) {
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('pin', pin);
+            try {
+                const res = await fetch('admin.php?action=save_maily_pin', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification(data.message);
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    alert(data.message || 'บันทึก PIN ไม่สำเร็จ');
+                }
+            } catch (err) {
+                alert('บันทึก PIN ไม่สำเร็จ');
+            }
+        }
+        function addMailyPin() {
+            const email = document.getElementById('mailyPinEmailInput').value.trim();
+            const pin = document.getElementById('mailyPinInput').value.trim();
+            if (!email || !/^\d{6}$/.test(pin)) { alert('กรอกอีเมล Maily และ PIN ตัวเลข 6 หลักให้ครบ'); return; }
+            saveMailyPin(email, pin);
+        }
+        function deleteMailyPin(email) {
+            if (!confirm('ลบ PIN ของกล่อง ' + email + ' ?')) return;
+            saveMailyPin(email, '');
+        }
+
         async function handleSaveMicrosoftOAuth() {
             const client_id = document.getElementById('msClientIdInput').value.trim();
             const client_secret = document.getElementById('msClientSecretInput').value.trim();

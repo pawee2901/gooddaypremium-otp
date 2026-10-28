@@ -247,3 +247,86 @@ function save_config($config) {
         return false;
     }
 }
+
+// =========================================================================
+// site_options — ค่าตั้งค่าเพิ่มเติม (key → JSON) เก็บในตารางใหม่แยกต่างหาก
+// ไม่แตะตารางเดิม/ข้อมูลเดิมเลย (save_config ไม่ยุ่งกับตารางนี้) · สร้างตารางให้อัตโนมัติครั้งแรก
+// อ่านไม่ได้ (เช่น ไม่มีสิทธิ์สร้างตาราง) = คืนค่าเริ่มต้น หน้าเว็บยังทำงานปกติ
+// =========================================================================
+function __site_options_ready($pdo) {
+    static $ready = false;
+    if (!$ready) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS site_options (
+            k          VARCHAR(64) NOT NULL PRIMARY KEY,
+            v          MEDIUMTEXT  NULL,
+            updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $ready = true;
+    }
+}
+
+function site_option_get($key, $default = null) {
+    try {
+        $pdo = db_connect();
+        __site_options_ready($pdo);
+        $stmt = $pdo->prepare("SELECT v FROM site_options WHERE k = ?");
+        $stmt->execute([$key]);
+        $v = $stmt->fetchColumn();
+        if ($v === false || $v === null) return $default;
+        $data = json_decode($v, true);
+        return $data === null ? $default : $data;
+    } catch (Throwable $e) {
+        error_log('site_option_get failed: ' . $e->getMessage());
+        return $default;
+    }
+}
+
+function site_option_set($key, $value) {
+    try {
+        $pdo = db_connect();
+        __site_options_ready($pdo);
+        $stmt = $pdo->prepare("INSERT INTO site_options (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)");
+        $stmt->execute([$key, json_encode($value, JSON_UNESCAPED_UNICODE)]);
+        return true;
+    } catch (Throwable $e) {
+        error_log('site_option_set failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+// ข้อความบนหน้าร้านที่แอดมินแก้เองได้: key => [ชื่อช่องในหลังบ้าน, ข้อความเดิม] (ช่องว่าง = ใช้ข้อความเดิม)
+const SHOP_PAGE_TEXTS = [
+    'tagline'      => ['ข้อความใต้ชื่อร้าน', 'กดรับ otp เองได้ ตลอด 24 ชั่วโมง'],
+    'apps_title'   => ['หัวข้อหน้าหลัก (เลือกแอป)', 'เลือกแอปที่ต้องการรับรหัสยืนยัน'],
+    'search_title' => ['หัวข้อหน้ากรอกอีเมล', 'ค้นหารหัสผ่านทางอีเมล'],
+    'search_sub'   => ['คำอธิบายใต้หัวข้อหน้ากรอกอีเมล', 'ใส่ที่อยู่อีเมลของคุณเพื่อดึงรหัสยืนยันตัวล่าสุดได้ทันที'],
+    'button'       => ['ข้อความปุ่มค้นหา', 'ค้นหารหัสยืนยัน (OTP)'],
+];
+
+// ตั้งค่าหน้าร้าน (พื้นหลัง + ข้อความ) พร้อมค่าเริ่มต้น
+function shop_page_options() {
+    $p = site_option_get('shop_page', []);
+    if (!is_array($p)) $p = [];
+    return [
+        'bg_type'  => ($p['bg_type'] ?? 'color') === 'image' ? 'image' : 'color',
+        'bg_color' => (isset($p['bg_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $p['bg_color'])) ? $p['bg_color'] : '#ffffff',
+        'bg_image' => (isset($p['bg_image']) && is_string($p['bg_image'])) ? $p['bg_image'] : '',
+        'texts'    => (isset($p['texts']) && is_array($p['texts'])) ? $p['texts'] : [],
+    ];
+}
+
+function shop_text($page, $key) {
+    $v = $page['texts'][$key] ?? '';
+    return (is_string($v) && trim($v) !== '') ? $v : SHOP_PAGE_TEXTS[$key][1];
+}
+
+// สไตล์พื้นหลังหน้าร้าน — รูปต้องเป็นไฟล์ใน /static/ หรือ https (กันค่าแปลก ๆ หลุดเข้า CSS)
+function shop_bg_style($page) {
+    if ($page['bg_type'] === 'image' && preg_match('#^(/static/[A-Za-z0-9_.-]+|https://[^\s"\'()\\\\]+)$#', $page['bg_image'])) {
+        return "background: #fff url('" . $page['bg_image'] . "') center / cover no-repeat fixed;";
+    }
+    if ($page['bg_type'] === 'color' && strtolower($page['bg_color']) !== '#ffffff') {
+        return 'background: ' . $page['bg_color'] . ';';
+    }
+    return '';
+}

@@ -61,7 +61,8 @@ $maily_tokens = [];
 if (isset($config_data['api_providers']) && is_array($config_data['api_providers'])) {
     foreach ($config_data['api_providers'] as $p) {
         if (!empty($p['token']) && ($p['type'] ?? 'maily') === 'maily') {
-            $maily_tokens[] = trim($p['token']);
+            // ร้านมักวางมาพร้อมคำว่า "Bearer " → ตัดออก
+            $maily_tokens[] = preg_replace('/^bearer\s+/i', '', trim($p['token']));
         }
     }
 }
@@ -71,6 +72,62 @@ if (empty($maily_tokens)) {
     $maily_tokens = array_values(array_filter([$token_1, $token_2]));
 }
 $cloud_run_url = "https://getemails-wfudlrftlq-uc.a.run.app/getEmails";
+
+// PIN 6 หลักของกล่อง Maily (ตั้งในหลังบ้าน แท็บตั้งค่า API) — กล่องที่ตั้ง PIN ไว้ใน maily.space ต้องส่ง PIN ไม่งั้น Maily ตอบ "กรุณาใส่ PIN"
+$maily_pins = site_option_get('maily_pins', []);
+if (!is_array($maily_pins)) $maily_pins = [];
+
+function maily_http($url, $headers, $post_body = null) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    if ($post_body !== null) {
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_body);
+    }
+    $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return [$res, $code];
+}
+
+function maily_is_v1_key($token) {
+    return (bool)preg_match('/^sk_v\d+_/i', (string)$token);
+}
+
+/**
+ * ดึงรายการเมลของกล่อง Maily — คืน [response JSON รูปแบบเดิม {data:{mails:[]}}, http code, token ที่ใช้ได้]
+ * - คีย์แบบใหม่ sk_v1_... (จาก maily.space/dashboard/api) ใช้ API v1: POST /v1/mails ส่ง apiKey + email ใน body
+ * - Bearer token แบบเดิมใช้ /mail/public/mails · กล่องที่มี PIN ส่ง header X-Mailbox-Pin (อ่านด้วย PIN อย่างเดียวได้ ไม่ต้องมี token)
+ */
+function maily_fetch_list($api_url, $query_params, $email, $tokens, $pin) {
+    $attempts = $pin !== '' ? array_merge([''], $tokens) : $tokens;
+    foreach ($attempts as $token) {
+        if (maily_is_v1_key($token)) {
+            list($res, $code) = maily_http('https://api.maily.space/v1/mails', ['Content-Type: application/json'],
+                json_encode(['apiKey' => $token, 'email' => strtolower($email), 'size' => 15, 'page' => 1]));
+            $j = $res ? json_decode($res, true) : null;
+            $mails = $j['mails'] ?? ($j['data']['mails'] ?? null);
+            if ($code === 200 && is_array($mails)) {
+                return [json_encode(['data' => ['mails' => $mails]]), 200, $token];
+            }
+            continue;
+        }
+        $headers = ['Content-Type: application/json'];
+        if ($token !== '') $headers[] = "Authorization: Bearer $token";
+        if ($pin !== '') $headers[] = "X-Mailbox-Pin: $pin";
+        list($res, $code) = maily_http("$api_url?$query_params", $headers);
+        if ($code === 200 && $res) {
+            $j = json_decode($res, true);
+            if (isset($j['data']['mails'])) return [$res, 200, $token];
+        }
+    }
+    return [false, 0, ''];
+}
 
 // ฟังก์ชันแปลงชื่อบริการเป็นรหัสย่อของระบบ RDCW Cloud Run
 function get_app_code($name) {
@@ -766,36 +823,8 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
         "domainId" => $domain_id
     ]);
     
-    $response = false;
-    $http_code = 0;
-    $working_token = "";
-    
-    foreach ($maily_tokens as $token) {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $token",
-            "Content-Type: application/json"
-        ]);
-        
-        $res = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($code === 200 && $res) {
-            $test_data = json_decode($res, true);
-            if (isset($test_data['data']['mails'])) {
-                $response = $res;
-                $http_code = $code;
-                $working_token = $token;
-                break;
-            }
-        }
-    }
+    $maily_pin = isset($maily_pins[strtolower($target_maily_email)]) ? (string)$maily_pins[strtolower($target_maily_email)] : '';
+    list($response, $http_code, $working_token) = maily_fetch_list($maily_api_url, $query_params, $target_maily_email, $maily_tokens, $maily_pin);
 
     if ($http_code === 200 && $response) {
         $data = json_decode($response, true);
@@ -805,7 +834,7 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
             $html_body = $mail['html'] ?? '';
             
             // หากเนื้อหา html ว่างเปล่า ให้ดึงรายละเอียดจดหมาย (Detail API) ล่วงหน้า
-            if (empty($html_body) && !empty($mail['id'])) {
+            if (empty($html_body) && !empty($mail['id']) && !maily_is_v1_key($working_token)) {
                 $mail_id = $mail['id'];
                 $detail_params = http_build_query([
                     "accountName" => $account_name,
@@ -819,10 +848,7 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
                 curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
-                    "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
-                    "Content-Type: application/json"
-                ]);
+                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, array_values(array_filter(["Content-Type: application/json", $working_token !== '' ? "Authorization: Bearer $working_token" : '', $maily_pin !== '' ? "X-Mailbox-Pin: $maily_pin" : ''])));
                 $detail_response = curl_exec($ch_detail);
                 curl_close($ch_detail);
                 
