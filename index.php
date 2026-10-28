@@ -18,13 +18,19 @@ if (file_exists($config_path)) {
 } else {
     file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
+// พื้นหลัง + ข้อความหน้าร้านที่แอดมินตั้งไว้ (ยังไม่ได้ตั้ง = หน้าตาเดิม) — ดู extras.php
+require_once __DIR__ . '/extras.php';
+$shop_page = shop_page_options($config);
 ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>gooddaypremiumotp - ค้นหารหัส OTP ตัวล่าสุด</title>
+    <title><?php echo htmlspecialchars($config['shop_name']); ?> — รับรหัส OTP</title>
+    <!-- ไอคอนแท็บเบราว์เซอร์ = โลโก้ร้าน -->
+    <link rel="icon" href="<?php echo htmlspecialchars($config['logo_path']); ?>">
+    <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($config['logo_path']); ?>">
     <!-- Google Fonts for premium typography: Inter (English) and Mitr (Thai) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,7 +85,7 @@ if (file_exists($config_path)) {
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 bg-white selection:bg-black selection:text-white">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 bg-white selection:bg-black selection:text-white" style="<?php echo htmlspecialchars(shop_bg_style($shop_page)); ?>">
 
     <!-- Container หลัก (Fully Responsive) -->
     <div class="w-full max-w-lg flex flex-col gap-6">
@@ -90,7 +96,7 @@ if (file_exists($config_path)) {
                 <!-- Shop Official Logo -->
                 <div class="relative">
                     <img src="<?php echo htmlspecialchars($config['logo_path']); ?>" alt="<?php echo htmlspecialchars($config['shop_name']); ?> logo" 
-                         class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-gray-50 shadow-md transform hover:scale-105 transition-transform duration-300"
+                         class="w-[140px] h-[140px] rounded-full object-cover border-4 border-gray-50 shadow-md transform hover:scale-105 transition-transform duration-300"
                          onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop';">
                     <div class="absolute -bottom-1 -right-1 bg-green-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] border-2 border-white shadow">
                         <i class="fa-solid fa-circle-check"></i>
@@ -99,7 +105,7 @@ if (file_exists($config_path)) {
                 
                 <div class="space-y-1">
                     <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight leading-none"><?php echo htmlspecialchars($config['shop_name']); ?></h1>
-                    <p class="text-xs font-semibold text-gray-400 tracking-wide">กดรับ otp เองได้ ตลอด 24 ชั่วโมง</p>
+                    <p class="text-xs font-semibold text-gray-400 tracking-wide"><?php echo htmlspecialchars(shop_text($shop_page, 'tagline')); ?></p>
                 </div>
             </div>
             
@@ -111,7 +117,7 @@ if (file_exists($config_path)) {
         <!-- ========================================== -->
         <div id="appSelectionScreen" class="space-y-6 transition-all duration-500">
             <div class="text-center">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">เลือกแอปที่ต้องการรับรหัสยืนยัน</h2>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight"><?php echo htmlspecialchars(shop_text($shop_page, 'apps_title')); ?></h2>
             </div>
 
             <!-- Grid ของปุ่มเลือกแอป (สไตล์น่ารักมินิมอลสีขาวพาสเทล - แสดงผลตามการตั้งค่าแบบ Dynamic) -->
@@ -133,11 +139,11 @@ if (file_exists($config_path)) {
                 <div onclick="selectApp('<?php echo $app_name; ?>')" 
                      class="app-btn rounded-[2rem] p-5 cursor-pointer flex flex-col items-center justify-center gap-3 text-center active:scale-[0.98] group transition-all duration-300 shadow-xs border"
                      style="background-color: <?php echo $bg_col; ?>; border-color: <?php echo $border_col; ?>;">
-                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110 p-1">
+                    <div class="w-[92px] h-[92px] bg-white rounded-[22px] shadow-sm border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110 p-1">
                         <?php if (!empty($logo)): ?>
                         <img src="<?php echo $logo; ?>" alt="<?php echo $app_name; ?> logo" class="w-full h-full object-contain transition-all duration-300">
                         <?php elseif (strpos(strtolower($app_name), 'disney') !== false): ?>
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-12 h-6 object-contain">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg" alt="Disney+ logo" class="w-20 h-10 object-contain">
                         <?php else: ?>
                         <span class="text-xs font-black text-purple-700 tracking-tighter uppercase select-none"><?php echo substr($app_name, 0, 6); ?></span>
                         <?php endif; ?>
@@ -167,8 +173,8 @@ if (file_exists($config_path)) {
                 </div>
 
                 <div class="text-center space-y-1">
-                    <h2 class="text-base md:text-lg font-bold text-gray-800">ค้นหารหัสผ่านทางอีเมล</h2>
-                    <p class="text-xs md:text-sm text-gray-500">ใส่ที่อยู่อีเมลของคุณเพื่อดึงรหัสยืนยันตัวล่าสุดได้ทันที</p>
+                    <h2 class="text-base md:text-lg font-bold text-gray-800"><?php echo htmlspecialchars(shop_text($shop_page, 'search_title')); ?></h2>
+                    <p class="text-xs md:text-sm text-gray-500"><?php echo htmlspecialchars(shop_text($shop_page, 'search_sub')); ?></p>
                 </div>
 
                 <div class="space-y-4">
@@ -185,7 +191,7 @@ if (file_exists($config_path)) {
                     <button id="searchBtn" onclick="fetchOTP()" 
                             class="w-full bg-black hover:bg-zinc-800 text-white font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm active:scale-[0.98] text-sm">
                         <i id="btnIcon" class="fa-solid fa-magnifying-glass"></i>
-                        <span id="btnText">ค้นหารหัสยืนยัน (OTP)</span>
+                        <span id="btnText"><?php echo htmlspecialchars(shop_text($shop_page, 'button')); ?></span>
                     </button>
                 </div>
 
@@ -399,7 +405,10 @@ if (file_exists($config_path)) {
             
             // แสดงรหัส OTP และรหัสอ้างอิง
             if (otpCodeNumber) {
-                if (emailData.otp) {
+                if (emailData.blocked) {
+                    // Netflix 6 หลักที่แอดมินปิดไว้
+                    otpCodeNumber.innerText = '🔒';
+                } else if (emailData.otp) {
                     otpCodeNumber.innerText = emailData.otp;
                 } else {
                     otpCodeNumber.innerText = 'ไม่พบรหัส OTP';
@@ -645,19 +654,18 @@ if (file_exists($config_path)) {
 
                 renderBrandAssets(appName);
 
-                if (data.success && data.emails && data.emails.length > 0) {
-                    currentEmails = data.emails;
-                    renderEmails(data.emails, appName);
-                    // แสดงหน้าดีเทลและคัดลอกรหัสทันที
-                    openEmailDetail(0);
-                    copyOTP();
-                } else {
-                    // หากไม่พบจดหมายในวิแรก: ให้เปลี่ยนหน้ามาหน้ารอรับรหัส Dynamic แบบไหลลื่น!
+                if (!(data.success && data.emails && data.emails.length > 0)) {
+                    // ไม่พบรหัส → แจ้งทันทีให้กดค้นหาอีกครั้ง (ไม่ค้างหน้ารอ)
                     currentEmails = [];
-                    renderEmails([], appName);
-                    // เริ่มกระบวนการสืบค้นสดอัปเดตอัตโนมัติ (Live Polling)
-                    startOTPPolling(emailInput);
+                    statusBox.classList.add('hidden');
+                    showError(data.message || 'ไม่พบรหัส OTP ล่าสุดของอีเมลนี้ กรุณากดขอรหัสจากแอปปลายทางก่อน แล้วกดค้นหาอีกครั้งค่ะ', 'ไม่พบรหัส — กดค้นหาอีกครั้งได้เลย');
+                    return;
                 }
+                currentEmails = data.emails;
+                renderEmails(data.emails, appName);
+                // แสดงหน้าดีเทลและคัดลอกรหัสทันที
+                openEmailDetail(0);
+                copyOTP();
 
                 setTimeout(() => {
                     statusBox.classList.add('hidden');
@@ -677,9 +685,10 @@ if (file_exists($config_path)) {
             }
         }
 
-        function showError(message) {
+        function showError(message, title) {
             const errorBox = document.getElementById('errorBox');
             const errorMessage = document.getElementById('errorMessage');
+            document.getElementById('errorTitle').innerText = title || 'เกิดข้อผิดพลาด';
             errorMessage.innerText = message;
             errorBox.classList.remove('hidden');
         }

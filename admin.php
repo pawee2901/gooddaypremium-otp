@@ -2,6 +2,7 @@
 session_start();
 
 $config_path = __DIR__ . '/config.json';
+require_once __DIR__ . '/extras.php'; // ฟีเจอร์เสริมจากเว็บเช่า
 $config = [
     'shop_name' => 'gooddaypremium',
     'logo_path' => '/static/logo.jpg',
@@ -151,6 +152,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // =====================================================================
+    // ฟีเจอร์เสริมจากเว็บเช่า (extras.php) — แก้ config.json ผ่าน cfg_update (อ่านไฟล์ล่าสุด แก้เฉพาะคีย์ใหม่)
+    // =====================================================================
+    $json_out = function ($ok, $message, $extra = []) {
+        if (!$ok) http_response_code(400);
+        echo json_encode(array_merge(['success' => (bool)$ok, 'message' => $message], $extra));
+        exit;
+    };
+
+    // --- Netflix 4/6 หลัก รายอีเมล (f = four | six) ---
+    if ($action === 'nf_toggle') {
+        header('Content-Type: application/json');
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $f = ($_POST['f'] ?? '') === 'four' ? 'four' : 'six';
+        if ($email === '') $json_out(false, 'ไม่พบอีเมล');
+        $now = null;
+        $ok = cfg_update(function ($c) use ($email, $f, &$now) {
+            $now = !nf_settings($c, $email)[$f];
+            $c['netflix']['emails'][$email][$f] = $now;
+            return $c;
+        });
+        $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : ('รหัส Netflix ' . ($f === 'four' ? '4' : '6') . ' หลัก: ' . ($now ? 'เปิด' : 'ปิด') . ' เรียบร้อยแล้ว'), ['on' => $now]);
+    }
+
+    // --- Netflix 4/6 หลัก ทุกอีเมล (ตั้งค่าเริ่มต้น + ทับค่ารายอีเมลทั้งหมด) ---
+    if ($action === 'nf_bulk') {
+        header('Content-Type: application/json');
+        $f = ($_POST['f'] ?? '') === 'four' ? 'four' : 'six';
+        $on = filter_var($_POST['on'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $ok = cfg_update(function ($c) use ($f, $on) {
+            $c['netflix']['default'][$f] = $on;
+            foreach (($c['netflix']['emails'] ?? []) as $em => $v) $c['netflix']['emails'][$em][$f] = $on;
+            return $c;
+        });
+        $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : ('รหัส Netflix ' . ($f === 'four' ? '4' : '6') . ' หลัก: ' . ($on ? 'เปิด' : 'ปิด') . ' ทุกอีเมลแล้ว'));
+    }
+
+    // --- PIN 6 หลักของกล่อง Maily (ว่าง = ลบ) ---
+    if ($action === 'save_maily_pin') {
+        header('Content-Type: application/json');
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $pin = preg_replace('/\D/', '', $_POST['pin'] ?? '');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $json_out(false, 'อีเมลไม่ถูกต้อง');
+        if ($pin !== '' && strlen($pin) !== 6) $json_out(false, 'PIN กล่อง Maily ต้องเป็นตัวเลข 6 หลัก');
+        $ok = cfg_update(function ($c) use ($email, $pin) {
+            if ($pin === '') unset($c['maily_pins'][$email]); else $c['maily_pins'][$email] = $pin;
+            return $c;
+        });
+        $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : ($pin === '' ? 'ลบ PIN กล่อง Maily แล้ว' : 'บันทึก PIN กล่อง Maily แล้ว'));
+    }
+
+    // --- แจ้งเตือน Discord: บันทึก + ส่งข้อความทดสอบ / ยกเลิก ---
+    if ($action === 'save_discord') {
+        header('Content-Type: application/json');
+        $hook = trim($_POST['webhook'] ?? '');
+        if ($hook === '') {
+            $ok = cfg_update(function ($c) { unset($c['discord_webhook']); return $c; });
+            $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : 'ยกเลิกแจ้งเตือน Discord แล้ว');
+        }
+        if (!discord_webhook_ok($hook)) $json_out(false, 'ลิงก์ Webhook ไม่ถูกต้อง (ต้องขึ้นต้นด้วย https://discord.com/api/webhooks/)');
+        if (!discord_post($hook, '🔔 เชื่อมต่อแจ้งเตือนร้าน ' . ($config['shop_name'] ?? '') . ' สำเร็จ', 'ห้องนี้จะได้รับแจ้งเตือนเมื่อลูกค้าขอรหัส OTP จากเว็บของคุณ', 0x5865f2)) {
+            $json_out(false, 'ส่งข้อความไปที่ Webhook นี้ไม่ได้ — ตรวจว่าคัดลอกลิงก์ครบ และ Webhook ยังไม่ถูกลบ');
+        }
+        $ok = cfg_update(function ($c) use ($hook) { $c['discord_webhook'] = $hook; return $c; });
+        $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : 'เชื่อมต่อแล้ว — ส่งข้อความทดสอบเข้าห้อง Discord ของคุณแล้ว');
+    }
+
+    // --- หน้าร้าน: พื้นหลัง + ข้อความ ---
+    if ($action === 'save_shop_page') {
+        header('Content-Type: application/json');
+        $bg_type = ($_POST['bg_type'] ?? '') === 'image' ? 'image' : 'color';
+        $bg_color = trim($_POST['bg_color'] ?? '#ffffff');
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $bg_color)) $bg_color = '#ffffff';
+        $texts = [];
+        foreach (array_keys(SHOP_PAGE_TEXTS) as $k) {
+            $v = trim($_POST['text_' . $k] ?? '');
+            if ($v !== '') $texts[$k] = function_exists('mb_substr') ? mb_substr($v, 0, 120) : substr($v, 0, 360);
+        }
+        $ok = cfg_update(function ($c) use ($bg_type, $bg_color, $texts) {
+            $page = shop_page_options($c);
+            $page['bg_type'] = $bg_type;
+            $page['bg_color'] = $bg_color;
+            $page['texts'] = $texts;
+            $c['shop_page'] = $page;
+            return $c;
+        });
+        $json_out($ok !== false, $ok === false ? 'บันทึกพื้นหลัง/ข้อความหน้าร้านไม่สำเร็จ' : 'บันทึกหน้าร้านเรียบร้อยแล้ว');
+    }
+
+    // --- อัปโหลดรูปพื้นหลังหน้าร้าน ---
+    if ($action === 'upload_bg') {
+        header('Content-Type: application/json');
+        $file = $_FILES['bg'] ?? null;
+        $ext = $file ? strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) : '';
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK || !in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp'])) {
+            $json_out(false, 'กรุณาเลือกไฟล์รูปภาพ (png, jpg, gif, webp)');
+        }
+        $filename = 'bg_custom_' . time() . '.' . $ext;
+        $static_dir = __DIR__ . '/static/';
+        if (!is_dir($static_dir)) mkdir($static_dir, 0755, true);
+        if (!move_uploaded_file($file['tmp_name'], $static_dir . $filename)) $json_out(false, 'ไม่สามารถบันทึกไฟล์รูปภาพได้');
+        $ok = cfg_update(function ($c) use ($filename) {
+            $page = shop_page_options($c);
+            $page['bg_image'] = '/static/' . $filename;
+            $page['bg_type'] = 'image';
+            $c['shop_page'] = $page;
+            return $c;
+        });
+        $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : 'อัปโหลดรูปพื้นหลังสำเร็จ', ['bg_image' => '/static/' . $filename]);
+    }
+
     // --- Action: เพิ่ม/แก้ไข อีเมล IMAP ---
     if ($action === 'add_imap_email') {
         header('Content-Type: application/json');
@@ -194,6 +306,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $found_index = $idx;
                 break;
             }
+        }
+
+        // อีเมล Maily: PIN 6 หลักของกล่อง (ถ้าตั้งไว้ใน maily.space)
+        $maily_pin = isset($_POST['maily_pin']) ? preg_replace('/\D/', '', $_POST['maily_pin']) : '';
+        if ($provider === 'maily' && strlen($maily_pin) === 6) {
+            $config['maily_pins'][strtolower($email_addr)] = $maily_pin;
         }
 
         $new_item = [
@@ -563,6 +681,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             background-color: #F9FAFB;
             color: #111827;
         }
+            .email-card.kind-hidden { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-3 md:p-6 selection:bg-purple-600 selection:text-white">
@@ -695,6 +814,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
         <!-- ========================================== -->
         <!-- TAB 1 CONTENT: จัดการอีเมล IMAP (รับ OTP อัตโนมัติ) -->
         <!-- ========================================== -->
+<?php
+    // ปุ่ม Netflix 4 / 6 ของแต่ละอีเมล (เขียว = เปิด แดง = ปิด)
+    function nf_buttons_html($config, $email) {
+        $nf = nf_settings($config, $email);
+        $e = htmlspecialchars(strtolower($email), ENT_QUOTES);
+        $btn = function ($f, $d) use ($nf, $e) {
+            return '<button type="button" onclick="toggleNf(\'' . $e . '\', \'' . $f . '\')" class="w-6 h-5 rounded-md text-[10px] font-black text-white ' . ($nf[$f] ? 'bg-emerald-500' : 'bg-rose-500') . '">' . $d . '</button>';
+        };
+        return '<span class="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg border border-gray-200 bg-white" title="Netflix: 4 = หารหัส 4 หลักก่อน · 6 = ให้ลูกค้าเห็นรหัส 6 หลัก (เขียว=เปิด แดง=ปิด)"><span class="text-red-600 font-black text-[9px]">NETFLIX</span>' . $btn('four', '4') . $btn('six', '6') . '</span>';
+    }
+?>
         <div id="tabContentImap" class="space-y-5">
             <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
                 
@@ -711,9 +841,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                         <button onclick="window.location.reload()" title="รีเฟรช" class="w-9 h-9 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl border border-gray-200 flex items-center justify-center transition-all">
                             <i class="fa-solid fa-rotate"></i>
                         </button>
-                        <button onclick="openAddEmailModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98]">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>เพิ่มอีเมล</span>
+                        <button onclick="openAddEmailModal('gmail')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98]">
+                            <i class="fa-brands fa-google"></i>
+                            <span>เพิ่ม Gmail</span>
+                        </button>
+                        <button onclick="openAddEmailModal('maily')" class="bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98]">
+                            <i class="fa-solid fa-inbox"></i>
+                            <span>เพิ่ม Maily</span>
                         </button>
                     </div>
                 </div>
@@ -766,6 +900,32 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     </span>
                 </div>
 
+                <!-- กรองตามประเภทอีเมล (แบบเว็บเช่า) -->
+                <?php
+                    $count_maily = count(array_filter($imap_emails, function ($x) { return ($x['provider'] ?? '') === 'maily'; }));
+                    $count_gmail = count($imap_emails) - $count_maily;
+                ?>
+                <div class="flex flex-wrap gap-2" id="emailKindChips">
+                    <button type="button" data-kind-chip="all" onclick="filterEmailKind('all')" class="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-purple-600 text-white border-purple-600">ทั้งหมด <span class="opacity-70"><?php echo count($imap_emails); ?></span></button>
+                    <button type="button" data-kind-chip="gmail" onclick="filterEmailKind('gmail')" class="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-white text-gray-600 border-gray-200">Gmail <span class="opacity-70"><?php echo $count_gmail; ?></span></button>
+                    <button type="button" data-kind-chip="maily" onclick="filterEmailKind('maily')" class="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-white text-gray-600 border-gray-200">Maily <span class="opacity-70"><?php echo $count_maily; ?></span></button>
+                </div>
+
+                <!-- Netflix 4 / 6 หลัก (เปิด/ปิดทุกอีเมลพร้อมกัน · รายอีเมลใช้ปุ่ม 4 / 6 ในแต่ละแถว) -->
+                <div class="flex flex-col gap-2 bg-rose-50/50 border border-rose-100 rounded-2xl px-4 py-2.5">
+                    <p class="text-[11px] text-gray-600 leading-relaxed"><span class="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded mr-1.5">NETFLIX</span>
+                        <b>4</b> = หารหัส 4 หลัก (ยืนยันทีวี / ครัวเรือน) ก่อน · <b>6</b> = ให้ลูกค้าเห็นรหัส 6 หลัก (รหัสเข้าสู่ระบบ) ปิดไว้ = ซ่อนรหัส 6 หลัก</p>
+                    <?php foreach ([['four', '4'], ['six', '6']] as $nf_row): ?>
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-xs font-bold text-gray-700">รหัส <?php echo $nf_row[1]; ?> หลัก (ทุกอีเมล)</p>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="bulkNf('<?php echo $nf_row[0]; ?>', true)" class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">เปิดทั้งหมด</button>
+                            <button type="button" onclick="bulkNf('<?php echo $nf_row[0]; ?>', false)" class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white">ปิดทั้งหมด</button>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
                 <!-- Grid รายการอีเมลที่บันทึกไว้ -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="emailListGrid">
                     <div id="noEmailSearchResult" class="hidden col-span-full text-center py-10 text-gray-400 text-xs font-medium">
@@ -781,9 +941,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     <?php else: foreach ($imap_emails as $item):
                         $is_active = isset($item['active']) ? (bool)$item['active'] : true;
                     ?>
-                    <div class="email-card border rounded-xl p-3 flex items-center justify-between gap-2 transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>" data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>">
+                    <?php $is_maily_box = ($item['provider'] ?? '') === 'maily'; ?>
+                    <div class="email-card border rounded-xl p-3 space-y-2 transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>" data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>" data-kind="<?php echo $is_maily_box ? 'maily' : 'gmail'; ?>">
+                      <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <i class="fa-regular fa-envelope <?php echo $is_active ? 'text-emerald-600' : 'text-rose-600'; ?>"></i>
+                            <i class="<?php echo $is_maily_box ? 'fa-solid fa-inbox text-purple-600' : ('fa-regular fa-envelope ' . ($is_active ? 'text-emerald-600' : 'text-rose-600')); ?>"></i>
                             <span class="text-xs font-bold text-gray-800 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></span>
                         </div>
                         <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -798,6 +960,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                                 <i class="fa-regular fa-trash-can text-xs"></i>
                             </button>
                         </div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-1.5">
+                        <?php if ($is_maily_box): $has_pin = maily_pin_for($config, $item['email']) !== ''; ?>
+                        <button type="button" onclick="setMailyPin('<?php echo htmlspecialchars(strtolower($item['email']), ENT_QUOTES); ?>')" title="PIN 6 หลักของกล่องนี้ใน maily.space (ถ้ากล่องตั้ง PIN ไว้)"
+                                class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border <?php echo $has_pin ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'; ?>">
+                            <i class="fa-solid fa-lock"></i><span><?php echo $has_pin ? 'PIN Maily ✓' : 'ตั้ง PIN Maily'; ?></span>
+                        </button>
+                        <?php endif; ?>
+                        <?php echo nf_buttons_html($config, $item['email']); ?>
+                      </div>
                     </div>
                     <?php endforeach; endif; ?>
                 </div>
@@ -892,6 +1064,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                                 <span class="text-xs font-bold text-gray-800 truncate"><?php echo htmlspecialchars($ms_acc['email']); ?></span>
                             </div>
                             <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <?php echo nf_buttons_html($config, $ms_acc['email']); ?>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" <?php echo $ms_active ? 'checked' : ''; ?> onchange="toggleEmailActive('<?php echo htmlspecialchars($ms_acc['id']); ?>', this.checked)" class="sr-only peer">
                                     <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
@@ -979,6 +1152,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
         <!-- TAB 3 CONTENT: ตั้งค่า API & ความปลอดภัย -->
         <!-- ========================================== -->
         <div id="tabContentApi" class="hidden space-y-5">
+            <!-- แจ้งเตือน Discord ของร้าน (แบบเว็บเช่า) -->
+            <?php $discord_saved = discord_webhook_ok($config['discord_webhook'] ?? ''); ?>
+            <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                <div class="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2"><span class="text-indigo-500 text-lg"><i class="fa-brands fa-discord"></i></span><h2 class="text-base font-extrabold text-gray-900">แจ้งเตือน Discord ของร้าน</h2></div>
+                        <p class="text-xs text-gray-400">รับแจ้งเตือนในเซิร์ฟเวอร์ Discord ของคุณเองทุกครั้งที่ลูกค้าขอรหัส OTP</p>
+                    </div>
+                    <span class="flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg <?php echo $discord_saved ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'; ?>"><?php echo $discord_saved ? 'เชื่อมต่อแล้ว' : 'ยังไม่เชื่อมต่อ'; ?></span>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-gray-600 pl-1">ลิงก์ Webhook <?php echo $discord_saved ? '(วางลิงก์ใหม่เพื่อเปลี่ยนห้อง)' : ''; ?></label>
+                    <input type="text" id="discordWebhookInput" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none">
+                </div>
+                <details class="text-[11px] text-gray-600 bg-indigo-50/50 border border-indigo-100 rounded-2xl p-3">
+                    <summary class="font-extrabold text-indigo-600 cursor-pointer"><i class="fa-solid fa-book-open mr-1"></i>วิธีสร้างห้อง + Webhook</summary>
+                    <ol class="list-decimal pl-5 pt-2 space-y-1 leading-relaxed">
+                        <li>เปิด Discord → สร้างเซิร์ฟเวอร์ (หรือใช้เซิร์ฟเวอร์ของร้าน) → สร้างห้องข้อความ เช่น <b>#แจ้งเตือน-otp</b></li>
+                        <li>กดรูปเฟือง ⚙️ ข้างชื่อห้อง (แก้ไขช่อง) → เมนู <b>การผสานการทำงาน (Integrations)</b></li>
+                        <li>กด <b>Webhooks</b> → <b>Webhook ใหม่</b> → ตั้งชื่อได้ตามใจ</li>
+                        <li>กด <b>คัดลอก URL ของ Webhook</b> แล้วนำมาวางในช่องด้านบน → กดบันทึก</li>
+                    </ol>
+                </details>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button type="button" onclick="saveDiscord()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-1.5"><i class="fa-brands fa-discord"></i><span>บันทึก + ส่งข้อความทดสอบ</span></button>
+                    <?php if ($discord_saved): ?>
+                    <button type="button" onclick="removeDiscord()" class="bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-bold text-xs px-4 py-2.5 rounded-xl">ยกเลิกแจ้งเตือน</button>
+                    <?php endif; ?>
+                </div>
+                <p class="text-[10px] text-gray-400"><i class="fa-solid fa-lock mr-1"></i>แจ้งเฉพาะว่ามีการขอรหัส (แอป / อีเมล / พบหรือไม่) — ไม่ส่งตัวรหัส OTP ออกไป</p>
+            </div>
+
             <form id="settingsForm" onsubmit="handleSettingsUpdate(event)" class="space-y-5">
                 
                 <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
@@ -1064,6 +1269,54 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     </div>
                 </div>
 
+                <?php $shop_page = shop_page_options($config); ?>
+                <!-- พื้นหลังหน้าร้าน -->
+                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                    <div class="border-b border-gray-100 pb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900">
+                        <i class="fa-solid fa-image text-purple-600"></i>
+                        <span>พื้นหลังหน้าร้าน</span>
+                    </div>
+                    <input type="hidden" id="bgTypeInput" value="<?php echo $shop_page['bg_type']; ?>">
+                    <div class="inline-flex rounded-xl border border-gray-200 overflow-hidden">
+                        <button type="button" id="bgTypeColorBtn" onclick="setBgType('color')" class="px-4 py-2 text-xs font-bold <?php echo $shop_page['bg_type'] === 'color' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600'; ?>">สีพื้น</button>
+                        <button type="button" id="bgTypeImageBtn" onclick="setBgType('image')" class="px-4 py-2 text-xs font-bold <?php echo $shop_page['bg_type'] === 'image' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600'; ?>">รูปภาพ</button>
+                    </div>
+                    <div id="bgColorBox" class="flex items-center gap-2 <?php echo $shop_page['bg_type'] === 'color' ? '' : 'hidden'; ?>">
+                        <input type="color" id="bgColorInput" value="<?php echo htmlspecialchars($shop_page['bg_color']); ?>" class="w-11 h-9 p-0.5 rounded-xl border border-gray-200 cursor-pointer">
+                        <span class="text-[11px] text-gray-400">สีขาว (#ffffff) = หน้าตาเดิม</span>
+                    </div>
+                    <div id="bgImageBox" class="flex items-center gap-4 bg-gray-50/60 p-4 rounded-2xl border border-gray-100 <?php echo $shop_page['bg_type'] === 'image' ? '' : 'hidden'; ?>">
+                        <img id="bgImagePreview" src="<?php echo htmlspecialchars($shop_page['bg_image']); ?>" alt="" class="w-16 h-16 rounded-xl object-cover border border-gray-200 <?php echo $shop_page['bg_image'] ? '' : 'hidden'; ?>">
+                        <label for="bgFileInput" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-100 text-gray-700 font-bold text-xs px-3 py-1.5 rounded-xl border border-gray-200 cursor-pointer shadow-xs">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>อัปโหลดรูปพื้นหลัง</span>
+                        </label>
+                        <input type="file" id="bgFileInput" accept="image/*" class="hidden" onchange="uploadBgFile()">
+                    </div>
+                </div>
+
+                <!-- ข้อความบนหน้าร้าน -->
+                <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                    <div class="border-b border-gray-100 pb-3 space-y-1">
+                        <div class="flex items-center gap-2 text-sm font-extrabold text-gray-900">
+                            <i class="fa-solid fa-font text-purple-600"></i>
+                            <span>ข้อความบนหน้าร้าน</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">แก้คำที่ลูกค้าเห็นได้เอง · เว้นว่าง = ใช้ข้อความเดิม (ตัวอย่างสีเทาในช่อง)</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <?php foreach (SHOP_PAGE_TEXTS as $tkey => $tdef): ?>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-600 pl-1"><?php echo htmlspecialchars($tdef[0]); ?></label>
+                            <input type="text" data-shop-text="<?php echo $tkey; ?>" maxlength="120"
+                                   value="<?php echo htmlspecialchars($shop_page['texts'][$tkey] ?? ''); ?>"
+                                   placeholder="<?php echo htmlspecialchars($tdef[1]); ?>"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-purple-600 outline-none">
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
                     <div class="border-b border-gray-100 pb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900">
                         <i class="fa-solid fa-shield-halved text-purple-600"></i>
@@ -1112,7 +1365,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             </div>
 
             <form id="emailForm" onsubmit="handleSaveEmail(event)" class="space-y-4">
-                <p class="text-xs text-gray-400">สำหรับ Gmail เท่านั้น (Hotmail/Outlook ใช้ปุ่ม "เชื่อมต่อผ่าน Microsoft" แทนแล้วค่ะ)</p>
+                <input type="hidden" id="emailKindInput" value="gmail">
+                <p class="text-xs text-gray-400" id="emailModalHint">สำหรับ Gmail เท่านั้น (Hotmail/Outlook ใช้ปุ่ม "เชื่อมต่อผ่าน Microsoft" แทนแล้วค่ะ)</p>
+
+                <div class="space-y-1.5 hidden" id="mailyPinContainer">
+                    <label class="text-xs font-bold text-gray-700">PIN กล่อง Maily (6 หลัก) <span class="text-gray-400 font-medium">— ถ้าตั้งไว้ใน maily.space</span></label>
+                    <input type="password" id="emailMailyPinInput" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="เช่น 123456"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono tracking-[0.3em] focus:ring-2 focus:ring-purple-600 outline-none">
+                    <p class="text-[10px] text-gray-400">* ใช้ได้กับ @lico.moe, @rdcw.plus, @gooddaymail.com · กล่องที่ตั้ง PIN ไว้ต้องใส่ ไม่งั้น Maily จะไม่ให้อ่านเมล</p>
+                </div>
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-gray-700">ที่อยู่อีเมล (Email Address)</label>
@@ -1132,7 +1393,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3" id="imapHostPortContainer">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-gray-700">IMAP Host</label>
                         <input type="text" id="emailHostInput" value="imap.gmail.com" 
@@ -1348,7 +1609,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
         }
 
         // --- IMAP Email Handlers ---
-        function openAddEmailModal() {
+        function openAddEmailModal(kind) {
+            kind = kind === 'maily' ? 'maily' : 'gmail';
+            const maily = kind === 'maily';
+            document.getElementById('emailKindInput').value = kind;
+            document.getElementById('emailModalHint').innerText = maily
+                ? 'อีเมล Maily.space — ระบบอ่านด้วย API Key ในแท็บ "ตั้งค่า API" หรือด้วย PIN ของกล่อง'
+                : 'สำหรับ Gmail เท่านั้น (Hotmail/Outlook ใช้ปุ่ม "เชื่อมต่อผ่าน Microsoft" แทนแล้วค่ะ)';
+            document.getElementById('emailAddrInput').placeholder = maily ? 'เช่น shop01@lico.moe' : 'เช่น example@gmail.com';
+            document.getElementById('passInputContainer').classList.toggle('hidden', maily);
+            document.getElementById('imapHostPortContainer').classList.toggle('hidden', maily);
+            document.getElementById('mailyPinContainer').classList.toggle('hidden', !maily);
             document.getElementById('emailModal').classList.remove('hidden');
         }
         function closeEmailModal() {
@@ -1362,12 +1633,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             const host = document.getElementById('emailHostInput').value.trim();
             const port = document.getElementById('emailPortInput').value.trim();
 
+            const kind = document.getElementById('emailKindInput').value;
+            const mailyPin = document.getElementById('emailMailyPinInput').value.trim();
+            if (kind === 'maily' && mailyPin && !/^\d{6}$/.test(mailyPin)) { alert('PIN กล่อง Maily ต้องเป็นตัวเลข 6 หลัก'); return; }
+
             const formData = new FormData();
             formData.append('email', email);
-            formData.append('password', password);
-            formData.append('provider', 'gmail');
-            formData.append('host', host);
-            formData.append('port', port);
+            formData.append('password', kind === 'maily' ? '' : password);
+            formData.append('provider', kind);
+            formData.append('host', kind === 'maily' ? '' : host);
+            formData.append('port', kind === 'maily' ? '443' : port);
+            if (kind === 'maily') formData.append('maily_pin', mailyPin);
 
             try {
                 const res = await fetch('admin.php?action=add_imap_email', { method: 'POST', body: formData });
@@ -1638,7 +1914,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                 const res = await fetch('admin.php?action=update', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (data.success) {
-                    showNotification('บันทึกการตั้งค่าร้านค้าและรหัสผ่านเรียบร้อยแล้วค่ะ');
+                    const pageOk = await saveShopPage();
+                    showNotification(pageOk ? 'บันทึกการตั้งค่าร้านค้าและรหัสผ่านเรียบร้อยแล้วค่ะ' : 'บันทึกชื่อร้าน/รหัสผ่านแล้ว แต่พื้นหลัง/ข้อความหน้าร้านยังไม่ถูกบันทึก');
                     document.getElementById('headerShopName').innerText = shop_name;
                     document.getElementById('newUsernameInput').value = '';
                     document.getElementById('newPasswordInput').value = '';
@@ -1734,6 +2011,80 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     noResultEl.classList.add('hidden');
                 }
             }
+        }
+
+        // --- ฟีเจอร์เสริมจากเว็บเช่า ---
+        async function postAction(action, fields) {
+            const formData = new FormData();
+            Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
+            try {
+                const res = await fetch('admin.php?action=' + action, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!data.success) alert(data.message || 'บันทึกไม่สำเร็จ');
+                return data;
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย');
+                return { success: false };
+            }
+        }
+        async function reloadAfter(action, fields) {
+            const data = await postAction(action, fields);
+            if (data.success) { showNotification(data.message); setTimeout(() => window.location.reload(), 800); }
+        }
+        function toggleNf(email, f) { reloadAfter('nf_toggle', { email, f }); }
+        function bulkNf(f, on) {
+            if (!confirm((on ? 'เปิด' : 'ปิด') + 'รหัส Netflix ' + (f === 'four' ? '4' : '6') + ' หลัก ทุกอีเมล?')) return;
+            reloadAfter('nf_bulk', { f, on: on ? '1' : '0' });
+        }
+        function setMailyPin(email) {
+            const v = prompt('PIN 6 หลักของกล่อง Maily ' + email + '\n(ปล่อยว่าง = ลบ PIN)', '');
+            if (v === null) return;
+            const pin = v.replace(/\D/g, '');
+            if (pin && pin.length !== 6) { alert('PIN กล่อง Maily ต้องเป็นตัวเลข 6 หลัก'); return; }
+            reloadAfter('save_maily_pin', { email, pin });
+        }
+        function saveDiscord() {
+            const webhook = document.getElementById('discordWebhookInput').value.trim();
+            if (!webhook) { alert('วางลิงก์ Webhook ก่อน'); return; }
+            reloadAfter('save_discord', { webhook });
+        }
+        function removeDiscord() {
+            if (!confirm('ยกเลิกแจ้งเตือน Discord?')) return;
+            reloadAfter('save_discord', { webhook: '' });
+        }
+        function setBgType(type) {
+            document.getElementById('bgTypeInput').value = type;
+            document.getElementById('bgColorBox').classList.toggle('hidden', type !== 'color');
+            document.getElementById('bgImageBox').classList.toggle('hidden', type !== 'image');
+            document.getElementById('bgTypeColorBtn').className = 'px-4 py-2 text-xs font-bold ' + (type === 'color' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600');
+            document.getElementById('bgTypeImageBtn').className = 'px-4 py-2 text-xs font-bold ' + (type === 'image' ? 'bg-purple-600 text-white' : 'bg-white text-gray-600');
+        }
+        async function saveShopPage() {
+            const fields = { bg_type: document.getElementById('bgTypeInput').value, bg_color: document.getElementById('bgColorInput').value };
+            document.querySelectorAll('[data-shop-text]').forEach((el) => { fields['text_' + el.dataset.shopText] = el.value; });
+            const data = await postAction('save_shop_page', fields);
+            return !!data.success;
+        }
+        async function uploadBgFile() {
+            const input = document.getElementById('bgFileInput');
+            if (!input.files || !input.files[0]) return;
+            const data = await postAction('upload_bg', { bg: input.files[0] });
+            if (data.success) {
+                document.getElementById('bgImagePreview').src = data.bg_image;
+                document.getElementById('bgImagePreview').classList.remove('hidden');
+                setBgType('image');
+                showNotification('อัปโหลดรูปพื้นหลังเรียบร้อยแล้วค่ะ');
+            }
+            input.value = '';
+        }
+        function filterEmailKind(kind) {
+            document.querySelectorAll('[data-kind-chip]').forEach((b) => {
+                const on = b.dataset.kindChip === kind;
+                b.className = 'text-[11px] font-bold px-3 py-1.5 rounded-full border ' + (on ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200');
+            });
+            document.querySelectorAll('.email-card').forEach((card) => {
+                card.classList.toggle('kind-hidden', kind !== 'all' && card.dataset.kind !== kind);
+            });
         }
 
         function clearEmailSearch() {

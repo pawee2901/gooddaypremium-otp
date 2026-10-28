@@ -34,18 +34,24 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
+// ฟีเจอร์เสริม (Maily sk_v1 + PIN, Netflix 4/6 หลัก, แจ้งเตือน Discord) — ดู extras.php
+require_once __DIR__ . '/extras.php';
+otp_capture_output(strtolower($email), $app_name);
+
 // =========================================================================
 // 2. การตั้งค่าการเชื่อมต่อ API จริง (Maily Space & Cloud Run)
 // =========================================================================
 $config_path = __DIR__ . '/config.json';
 $config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
+if (!is_array($config_data)) $config_data = [];
 
 $maily_api_url = "https://api.maily.space/mail/public/mails";
 $maily_tokens = [];
 if (isset($config_data['api_providers']) && is_array($config_data['api_providers'])) {
     foreach ($config_data['api_providers'] as $p) {
         if (!empty($p['token']) && ($p['type'] ?? 'maily') === 'maily') {
-            $maily_tokens[] = trim($p['token']);
+            // ร้านมักวางมาพร้อมคำว่า "Bearer " → ตัดออก
+            $maily_tokens[] = preg_replace('/^bearer\s+/i', '', trim($p['token']));
         }
     }
 }
@@ -709,36 +715,9 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
         "domainId" => $domain_id
     ]);
     
-    $response = false;
-    $http_code = 0;
-    $working_token = "";
-    
-    foreach ($maily_tokens as $token) {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "$maily_api_url?$query_params");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $token",
-            "Content-Type: application/json"
-        ]);
-        
-        $res = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($code === 200 && $res) {
-            $test_data = json_decode($res, true);
-            if (isset($test_data['data']['mails'])) {
-                $response = $res;
-                $http_code = $code;
-                $working_token = $token;
-                break;
-            }
-        }
-    }
+    // กล่องที่ตั้ง PIN ไว้ใน maily.space ต้องส่ง PIN · คีย์ sk_v1_ ใช้ API v1 (ดู extras.php)
+    $maily_pin = maily_pin_for($config_data, $target_maily_email);
+    list($response, $http_code, $working_token) = maily_fetch_list($maily_api_url, $query_params, $target_maily_email, $maily_tokens, $maily_pin);
 
     if ($http_code === 200 && $response) {
         $data = json_decode($response, true);
@@ -748,7 +727,7 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
             $html_body = $mail['html'] ?? '';
             
             // หากเนื้อหา html ว่างเปล่า ให้ดึงรายละเอียดจดหมาย (Detail API) ล่วงหน้า
-            if (empty($html_body) && !empty($mail['id'])) {
+            if (empty($html_body) && !empty($mail['id']) && !maily_is_v1_key($working_token)) {
                 $mail_id = $mail['id'];
                 $detail_params = http_build_query([
                     "accountName" => $account_name,
@@ -762,10 +741,7 @@ foreach ($maily_accounts_to_check as $target_maily_email) {
                 curl_setopt($ch_detail, CURLOPT_TIMEOUT, 5);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch_detail, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, [
-                    "Authorization: Bearer " . ($working_token ?: $maily_tokens[0]),
-                    "Content-Type: application/json"
-                ]);
+                curl_setopt($ch_detail, CURLOPT_HTTPHEADER, array_values(array_filter(["Content-Type: application/json", $working_token !== '' ? "Authorization: Bearer $working_token" : '', $maily_pin !== '' ? "X-Mailbox-Pin: $maily_pin" : ''])));
                 $detail_response = curl_exec($ch_detail);
                 curl_close($ch_detail);
                 
