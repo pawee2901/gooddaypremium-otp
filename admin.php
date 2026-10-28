@@ -682,6 +682,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             color: #111827;
         }
             .email-card.kind-hidden { display: none !important; }
+        .app-chip { display:inline-flex; align-items:center; gap:.35rem; font-size:11px; font-weight:700; padding:.35rem .7rem; border-radius:999px; background:#fff; border:1px solid #E9D5FF; color:#6B21A8; cursor:pointer; transition:all .2s; }
+        .app-chip span { font-size:10px; background:#F3E8FF; color:#7E22CE; border-radius:999px; padding:0 .4rem; }
+        .app-chip:hover { background:#FAF5FF; }
+        .app-chip.active { background:#7E22CE; border-color:transparent; color:#fff; box-shadow:0 4px 12px -4px rgba(126,34,206,.5); }
+        .app-chip.active span { background:rgba(255,255,255,.3); color:#fff; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-3 md:p-6 selection:bg-purple-600 selection:text-white">
@@ -826,89 +831,91 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
     }
 ?>
         <div id="tabContentImap" class="space-y-5">
-            <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6">
-                
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+            <?php
+                // รายการอีเมลทั้งหมดของร้าน (Gmail / Hotmail / Maily) ในกล่องเดียว — แบบหน้าหลังบ้านเว็บเช่า
+                $imap_emails = (isset($config['imap_emails']) && is_array($config['imap_emails'])) ? $config['imap_emails'] : [];
+                $email_kind = function ($item) {
+                    $p = $item['provider'] ?? '';
+                    if ($p === 'microsoft_graph' || $p === 'hotmail') return 'hotmail';
+                    return $p === 'maily' ? 'maily' : 'gmail';
+                };
+                $kind_count = ['gmail' => 0, 'hotmail' => 0, 'maily' => 0];
+                $app_count = [];
+                foreach ($imap_emails as $item) {
+                    $kind_count[$email_kind($item)]++;
+                    $aid = $item['app_id'] ?? 'all';
+                    $app_count[$aid] = ($app_count[$aid] ?? 0) + 1;
+                }
+                $kind_icon = [
+                    'gmail'   => ['fa-brands fa-google', 'bg-red-50 text-red-500'],
+                    'hotmail' => ['fa-brands fa-microsoft', 'bg-sky-50 text-sky-600'],
+                    'maily'   => ['fa-solid fa-inbox', 'bg-purple-50 text-purple-600'],
+                ];
+                $ms_config = isset($config['microsoft_oauth']) && is_array($config['microsoft_oauth']) ? $config['microsoft_oauth'] : [];
+                $ms_client_id = $ms_config['client_id'] ?? '';
+                $ms_client_secret = $ms_config['client_secret'] ?? '';
+                $ms_ready = $ms_client_id !== '' && $ms_client_secret !== '';
+            ?>
+            <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-5">
+                <div class="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
                     <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-purple-600 text-lg"><i class="fa-regular fa-envelope"></i></span>
-                            <h2 class="text-base font-extrabold text-gray-900">จัดการอีเมล IMAP (รับ OTP อัตโนมัติ)</h2>
-                        </div>
-                        <p class="text-xs text-gray-400">เพิ่มอีเมล+รหัสผ่านไว้ล่วงหน้า — ผู้ใช้จะไม่ต้องกรอก password เองค่ะ</p>
+                        <div class="flex items-center gap-2"><span class="text-purple-600 text-lg"><i class="fa-regular fa-envelope"></i></span><h2 class="text-base font-extrabold text-gray-900">อีเมลของร้าน</h2></div>
+                        <p class="text-xs text-gray-400">เพิ่มอีเมลของร้าน แล้วลูกค้ากรอกอีเมลในหน้า OTP เพื่อขอรหัสได้เลย</p>
                     </div>
-                    
-                    <div class="flex items-center gap-2">
-                        <button onclick="window.location.reload()" title="รีเฟรช" class="w-9 h-9 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl border border-gray-200 flex items-center justify-center transition-all">
-                            <i class="fa-solid fa-rotate"></i>
-                        </button>
-                        <button onclick="openAddEmailModal('gmail')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98]">
-                            <i class="fa-brands fa-google"></i>
-                            <span>เพิ่ม Gmail</span>
-                        </button>
-                        <button onclick="openAddEmailModal('maily')" class="bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-[0.98]">
-                            <i class="fa-solid fa-inbox"></i>
-                            <span>เพิ่ม Maily</span>
-                        </button>
-                    </div>
+                    <button type="button" onclick="window.location.reload()" title="รีเฟรช" class="w-9 h-9 flex-shrink-0 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 rounded-xl flex items-center justify-center transition-all"><i class="fa-solid fa-rotate-right text-xs"></i></button>
                 </div>
 
-                <!-- Info Help Box (สีฟ้า) -->
-                <div class="bg-blue-50/80 border border-blue-200/70 rounded-2xl p-4 space-y-2 text-xs text-blue-900">
+                <!-- ปุ่มเพิ่มอีเมลของแต่ละแบบ — 3 กล่องแถวเดียวกันทุกขนาดจอ -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                    <button type="button" onclick="openAddEmailModal('gmail')"
+                        class="relative bg-white hover:bg-red-50/40 border border-gray-200 hover:border-red-200 rounded-2xl px-2 py-3 sm:p-4 flex flex-col items-center text-center gap-1.5 sm:gap-2 transition-all">
+                        <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-lg"><i class="fa-brands fa-google"></i></span>
+                        <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight">Gmail</span>
+                        <span class="hidden sm:block text-[11px] text-gray-400 leading-snug">อีเมล + App Password</span>
+                        <span class="inline-flex items-center gap-1 whitespace-nowrap text-[10px] sm:text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg"><i class="fa-solid fa-plus"></i>เพิ่ม</span>
+                    </button>
+                    <?php if ($ms_ready): ?>
+                    <a href="admin.php?action=connect_microsoft"
+                        class="relative bg-white hover:bg-sky-50/40 border border-gray-200 hover:border-sky-200 rounded-2xl px-2 py-3 sm:p-4 flex flex-col items-center text-center gap-1.5 sm:gap-2 transition-all">
+                    <?php else: ?>
+                    <a href="#msOauthSection" onclick="showNotification('กรอก Client ID / Client Secret ของ Microsoft ด้านล่างก่อน แล้วกดบันทึก')"
+                        class="relative bg-white border border-gray-200 rounded-2xl px-2 py-3 sm:p-4 flex flex-col items-center text-center gap-1.5 sm:gap-2 transition-all opacity-60">
+                    <?php endif; ?>
+                        <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg"><i class="fa-brands fa-microsoft"></i></span>
+                        <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight">Hotmail</span>
+                        <span class="hidden sm:block text-[11px] text-gray-400 leading-snug"><?php echo $ms_ready ? 'ล็อกอิน Microsoft ได้เลย' : 'ตั้งค่า Microsoft ด้านล่างก่อน'; ?></span>
+                        <span class="inline-flex items-center gap-1 whitespace-nowrap text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg <?php echo $ms_ready ? 'text-sky-700 bg-sky-50' : 'text-gray-500 bg-gray-100'; ?>">
+                            <i class="<?php echo $ms_ready ? 'fa-solid fa-arrow-right-to-bracket' : 'fa-solid fa-lock'; ?>"></i><?php echo $ms_ready ? 'เชื่อมต่อ' : 'ปิดอยู่'; ?>
+                        </span>
+                    </a>
+                    <button type="button" onclick="openAddEmailModal('maily')"
+                        class="relative bg-white hover:bg-purple-50/40 border border-gray-200 hover:border-purple-200 rounded-2xl px-2 py-3 sm:p-4 flex flex-col items-center text-center gap-1.5 sm:gap-2 transition-all">
+                        <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg"><i class="fa-solid fa-inbox"></i></span>
+                        <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight">Maily</span>
+                        <span class="hidden sm:block text-[11px] text-gray-400 leading-snug">ใช้ Token ในหน้า API</span>
+                        <span class="inline-flex items-center gap-1 whitespace-nowrap text-[10px] sm:text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg"><i class="fa-solid fa-plus"></i>เพิ่ม</span>
+                    </button>
+                </div>
+
+                <div class="bg-blue-50/80 border border-blue-200/70 rounded-2xl p-4 text-xs text-blue-900">
                     <div class="flex items-start gap-2.5">
-                        <div class="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
-                            <i class="fa-solid fa-info"></i>
-                        </div>
-                        <div class="space-y-1 leading-relaxed">
-                            <p class="font-bold">วิธีใช้: <span class="font-normal">เพิ่มอีเมล Gmail พร้อม App Password ที่นี่ &rarr; ผู้ใช้แค่พิมพ์อีเมลในหน้า OTP &rarr; ระบบดึงรหัสให้อัตโนมัติโดยไม่ต้องกรอก password เลยค่ะ</span></p>
-                            <p class="font-semibold text-amber-700"><i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i>ส่วน Hotmail/Outlook ให้เลื่อนลงไปกดปุ่ม "เชื่อมต่อบัญชี Hotmail/Outlook" ด้านล่างแทนค่ะ</p>
-
-                            <div class="pt-2 border-t border-blue-200/50 flex flex-wrap items-center gap-2">
-                                <button type="button" onclick="openGuideModal('gmail')" class="inline-flex items-center gap-1.5 bg-white hover:bg-blue-100/70 text-purple-700 border border-purple-200 text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer">
-                                    <i class="fa-brands fa-google text-red-500"></i>
-                                    <span>วิธีหา App Password (Gmail)</span>
-                                </button>
-                            </div>
+                        <div class="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5"><i class="fa-solid fa-info"></i></div>
+                        <div class="space-y-1.5 leading-relaxed">
+                            <p><b>วิธีใช้:</b> เพิ่มอีเมลของร้าน → ลูกค้ากรอกอีเมลในหน้า OTP แล้วกดขอรหัสได้ทันที</p>
+                            <button type="button" onclick="openGuideModal('gmail')" class="inline-flex items-center gap-1.5 bg-white hover:bg-blue-100/70 text-purple-700 border border-purple-200 text-[11px] font-extrabold px-3 py-1.5 rounded-xl transition-all"><i class="fa-brands fa-google text-red-500"></i><span>วิธีหา App Password (Gmail)</span></button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Search Box (ช่องค้นหาอีเมล) -->
-                <?php
-                    $imap_emails_all = isset($config['imap_emails']) ? $config['imap_emails'] : [];
-                    // แสดงเฉพาะบัญชี Gmail ในกล่องนี้ ส่วนบัญชี Hotmail/Outlook (Microsoft Graph) แยกไปแสดงในกล่องด้านล่าง
-                    $imap_emails = array_values(array_filter($imap_emails_all, function ($item) {
-                        return ($item['provider'] ?? '') !== 'microsoft_graph';
-                    }));
-                ?>
-                <div class="flex items-center justify-between gap-3 bg-gray-50/70 border border-gray-200/80 rounded-2xl p-2.5 sm:px-4">
-                    <div class="flex items-center gap-2.5 flex-1">
-                        <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
-                        <input type="text" 
-                               id="emailSearchInput" 
-                               oninput="filterEmailList(this.value)" 
-                               placeholder="พิมพ์ค้นหาอีเมล เช่น @gmail.com หรือชื่อบัญชี..." 
-                               class="w-full bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none placeholder-gray-400 font-medium">
-                        <button type="button" 
-                                id="clearEmailSearchBtn" 
-                                onclick="clearEmailSearch()" 
-                                class="hidden text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded-full hover:bg-gray-200/60 transition-all">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <span id="emailSearchCount" class="text-[11px] font-bold text-gray-400 whitespace-nowrap bg-white px-2.5 py-1 rounded-xl border border-gray-100 shadow-xs">
-                        <?php echo count($imap_emails); ?> รายการ
-                    </span>
-                </div>
-
-                <!-- กรองตามประเภทอีเมล (แบบเว็บเช่า) -->
-                <?php
-                    $count_maily = count(array_filter($imap_emails, function ($x) { return ($x['provider'] ?? '') === 'maily'; }));
-                    $count_gmail = count($imap_emails) - $count_maily;
-                ?>
-                <div class="flex flex-wrap gap-2" id="emailKindChips">
-                    <button type="button" data-kind-chip="all" onclick="filterEmailKind('all')" class="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-purple-600 text-white border-purple-600">ทั้งหมด <span class="opacity-70"><?php echo count($imap_emails); ?></span></button>
-                    <button type="button" data-kind-chip="gmail" onclick="filterEmailKind('gmail')" class="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-white text-gray-600 border-gray-200">Gmail <span class="opacity-70"><?php echo $count_gmail; ?></span></button>
-                    <button type="button" data-kind-chip="maily" onclick="filterEmailKind('maily')" class="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-white text-gray-600 border-gray-200">Maily <span class="opacity-70"><?php echo $count_maily; ?></span></button>
+                <!-- กรองตามประเภทอีเมล / แอป -->
+                <div class="flex flex-wrap gap-1.5" id="emailKindChips">
+                    <button type="button" data-kind-chip="all" onclick="filterEmailKind('all')" class="app-chip active">ทั้งหมด <span><?php echo count($imap_emails); ?></span></button>
+                    <button type="button" data-kind-chip="gmail" onclick="filterEmailKind('gmail')" class="app-chip">Gmail <span><?php echo $kind_count['gmail']; ?></span></button>
+                    <button type="button" data-kind-chip="hotmail" onclick="filterEmailKind('hotmail')" class="app-chip">Hotmail <span><?php echo $kind_count['hotmail']; ?></span></button>
+                    <button type="button" data-kind-chip="maily" onclick="filterEmailKind('maily')" class="app-chip">Maily <span><?php echo $kind_count['maily']; ?></span></button>
+                    <?php foreach (($config['apps'] ?? []) as $chip_app): if (empty($chip_app['id'])) continue; ?>
+                    <button type="button" data-kind-chip="app:<?php echo htmlspecialchars($chip_app['id']); ?>" onclick="filterEmailKind('app:<?php echo htmlspecialchars($chip_app['id'], ENT_QUOTES); ?>')" class="app-chip"><?php echo htmlspecialchars($chip_app['name'] ?? ''); ?> <span><?php echo (int)($app_count[$chip_app['id']] ?? 0); ?></span></button>
+                    <?php endforeach; ?>
                 </div>
 
                 <!-- Netflix 4 / 6 หลัก (เปิด/ปิดทุกอีเมลพร้อมกัน · รายอีเมลใช้ปุ่ม 4 / 6 ในแต่ละแถว) -->
@@ -926,80 +933,73 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     <?php endforeach; ?>
                 </div>
 
-                <!-- Grid รายการอีเมลที่บันทึกไว้ -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="emailListGrid">
+                <!-- ค้นหาอีเมล -->
+                <div class="flex items-center justify-between gap-3 bg-gray-50/70 border border-gray-200/80 rounded-2xl p-2.5 sm:px-4">
+                    <div class="flex items-center gap-2.5 flex-1">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                        <input type="text" id="emailSearchInput" oninput="filterEmailList(this.value)" placeholder="พิมพ์ค้นหาอีเมล..."
+                               class="w-full bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none placeholder-gray-400 font-medium">
+                        <button type="button" id="clearEmailSearchBtn" onclick="clearEmailSearch()" class="hidden text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded-full hover:bg-gray-200/60 transition-all">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <span id="emailSearchCount" class="text-[11px] font-bold text-gray-400 whitespace-nowrap bg-white px-2.5 py-1 rounded-xl border border-gray-100 shadow-xs"><?php echo count($imap_emails); ?> รายการ</span>
+                </div>
+
+                <!-- รายการอีเมลของร้าน -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="emailListGrid">
                     <div id="noEmailSearchResult" class="hidden col-span-full text-center py-10 text-gray-400 text-xs font-medium">
                         <i class="fa-solid fa-magnifying-glass text-gray-300 text-2xl mb-2 block"></i>
                         ไม่พบอีเมลที่ตรงกับคำค้นหา
                     </div>
-                    <?php 
-                    if (empty($imap_emails)): 
-                    ?>
-                    <div class="col-span-full text-center py-10 text-gray-400 text-xs font-medium">
-                        ยังไม่มีรายการอีเมล IMAP ในระบบ กดปุ่ม "+ เพิ่มอีเมล" เพื่อเริ่มต้นใช้งาน
-                    </div>
+                    <?php if (empty($imap_emails)): ?>
+                    <div class="col-span-full text-center py-10 text-gray-400 text-xs font-medium">ยังไม่มีอีเมลของร้าน กดปุ่มเพิ่มอีเมลด้านบน (Gmail / Hotmail / Maily)</div>
                     <?php else: foreach ($imap_emails as $item):
                         $is_active = isset($item['active']) ? (bool)$item['active'] : true;
+                        $kind = $email_kind($item);
+                        $id_attr = htmlspecialchars($item['id'] ?? '', ENT_QUOTES);
                     ?>
-                    <?php $is_maily_box = ($item['provider'] ?? '') === 'maily'; ?>
-                    <div class="email-card border rounded-xl p-3 space-y-2 transition-all <?php echo $is_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60 opacity-85'; ?>" data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>" data-kind="<?php echo $is_maily_box ? 'maily' : 'gmail'; ?>">
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <i class="<?php echo $is_maily_box ? 'fa-solid fa-inbox text-purple-600' : ('fa-regular fa-envelope ' . ($is_active ? 'text-emerald-600' : 'text-rose-600')); ?>"></i>
-                            <span class="text-xs font-bold text-gray-800 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></span>
+                    <div class="email-card rounded-2xl p-3 space-y-2.5 border transition-all <?php echo $is_active ? 'bg-white border-gray-200/80' : 'bg-rose-50/50 border-rose-200/70'; ?>"
+                         data-email="<?php echo htmlspecialchars(strtolower($item['email'])); ?>" data-kind="<?php echo $kind; ?>" data-app="<?php echo htmlspecialchars($item['app_id'] ?? 'all'); ?>">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs flex-shrink-0 <?php echo $kind_icon[$kind][1]; ?>"><i class="<?php echo $kind_icon[$kind][0]; ?>"></i></span>
+                                <span class="text-xs font-bold text-gray-800 truncate" title="<?php echo htmlspecialchars($item['email']); ?>"><?php echo htmlspecialchars($item['email']); ?></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <label class="relative inline-flex items-center cursor-pointer" title="<?php echo $is_active ? 'คลิกเพื่อล็อกอีเมลนี้' : 'คลิกเพื่อปลดล็อกอีเมลนี้'; ?>">
+                                    <input type="checkbox" <?php echo $is_active ? 'checked' : ''; ?> onchange="toggleEmailActive('<?php echo $id_attr; ?>', this.checked)" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                                <button type="button" onclick="deleteEmail('<?php echo $id_attr; ?>')" title="ลบอีเมลนี้" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all"><i class="fa-regular fa-trash-can text-xs"></i></button>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-1.5 flex-shrink-0">
-                            <label class="relative inline-flex items-center cursor-pointer" title="<?php echo $is_active ? 'คลิกเพื่อล็อกอีเมลนี้' : 'คลิกเพื่อปลดล็อกอีเมลนี้'; ?>">
-                                <input type="checkbox" <?php echo $is_active ? 'checked' : ''; ?>
-                                       onchange="toggleEmailActive('<?php echo htmlspecialchars($item['id']); ?>', this.checked)"
-                                       class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                            </label>
-                            <button onclick="deleteEmail('<?php echo htmlspecialchars($item['id']); ?>')" title="ลบอีเมลนี้"
-                                    class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
-                                <i class="fa-regular fa-trash-can text-xs"></i>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <?php if ($kind === 'maily'): $has_pin = maily_pin_for($config, $item['email']) !== ''; ?>
+                            <button type="button" onclick="setMailyPin('<?php echo htmlspecialchars(strtolower($item['email']), ENT_QUOTES); ?>')" title="PIN 6 หลักของกล่องนี้ใน maily.space (ถ้ากล่องตั้ง PIN ไว้)"
+                                    class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border <?php echo $has_pin ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'; ?>">
+                                <i class="fa-solid fa-lock"></i><span><?php echo $has_pin ? 'PIN Maily ✓' : 'ตั้ง PIN Maily'; ?></span>
                             </button>
+                            <?php endif; ?>
+                            <?php echo nf_buttons_html($config, $item['email']); ?>
                         </div>
-                      </div>
-                      <div class="flex flex-wrap items-center gap-1.5">
-                        <?php if ($is_maily_box): $has_pin = maily_pin_for($config, $item['email']) !== ''; ?>
-                        <button type="button" onclick="setMailyPin('<?php echo htmlspecialchars(strtolower($item['email']), ENT_QUOTES); ?>')" title="PIN 6 หลักของกล่องนี้ใน maily.space (ถ้ากล่องตั้ง PIN ไว้)"
-                                class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border <?php echo $has_pin ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'; ?>">
-                            <i class="fa-solid fa-lock"></i><span><?php echo $has_pin ? 'PIN Maily ✓' : 'ตั้ง PIN Maily'; ?></span>
-                        </button>
-                        <?php endif; ?>
-                        <?php echo nf_buttons_html($config, $item['email']); ?>
-                      </div>
                     </div>
                     <?php endforeach; endif; ?>
                 </div>
-
             </div>
 
+            <!-- ตั้งค่า Microsoft App (สำหรับปุ่มเชื่อมต่อ Hotmail ด้านบน) -->
             <div class="main-card rounded-3xl border border-gray-100 p-5 md:p-7 space-y-6" id="msOauthSection">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                            <span class="text-purple-600 text-lg"><i class="fa-brands fa-microsoft"></i></span>
-                            <h2 class="text-base font-extrabold text-gray-900">เชื่อมต่อ Hotmail/Outlook ผ่าน Microsoft (Graph API)</h2>
+                            <span class="text-sky-600 text-lg"><i class="fa-brands fa-microsoft"></i></span>
+                            <h2 class="text-base font-extrabold text-gray-900">ตั้งค่า Microsoft App (สำหรับเชื่อมต่อ Hotmail)</h2>
                         </div>
-                        <p class="text-xs text-gray-400">อ่านกล่องเมลตรงผ่าน API ทางการของ Microsoft เร็ว/แม่นยำกว่าการ Forward เข้าอีเมลกลาง</p>
+                        <p class="text-xs text-gray-400">อ่านกล่องเมลตรงผ่าน API ทางการของ Microsoft — ตั้งครั้งเดียว แล้วกดการ์ด Hotmail ด้านบนเพื่อเชื่อมต่ออีเมล</p>
                     </div>
+                    <span class="flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg <?php echo $ms_ready ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'; ?>"><?php echo $ms_ready ? 'พร้อมใช้งาน' : 'ยังไม่ได้ตั้งค่า'; ?></span>
                 </div>
-
-                <?php
-                    $ms_config = isset($config['microsoft_oauth']) && is_array($config['microsoft_oauth']) ? $config['microsoft_oauth'] : [];
-                    $ms_client_id = $ms_config['client_id'] ?? '';
-                    $ms_client_secret = $ms_config['client_secret'] ?? '';
-                    $ms_accounts = [];
-                    if (isset($config['imap_emails']) && is_array($config['imap_emails'])) {
-                        foreach ($config['imap_emails'] as $ms_item) {
-                            if (($ms_item['provider'] ?? '') === 'microsoft_graph') {
-                                $ms_accounts[] = $ms_item;
-                            }
-                        }
-                    }
-                ?>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1.5">
@@ -1021,66 +1021,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                     <button type="button" onclick="handleSaveMicrosoftOAuth()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-[0.98]">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกการตั้งค่า
                     </button>
-                    <?php if (!empty($ms_client_id)): ?>
-                    <a href="admin.php?action=connect_microsoft" class="bg-white hover:bg-gray-50 text-purple-700 border border-purple-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all inline-flex items-center">
+                    <?php if ($ms_ready): ?>
+                    <a href="admin.php?action=connect_microsoft" class="bg-white hover:bg-gray-50 text-sky-700 border border-sky-200 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all inline-flex items-center">
                         <i class="fa-brands fa-microsoft mr-1"></i> เชื่อมต่อบัญชี Hotmail/Outlook เพิ่ม
                     </a>
-                    <?php else: ?>
-                    <span class="text-[11px] text-gray-400">กรอกและบันทึก Client ID / Secret ก่อน ถึงจะเชื่อมต่อบัญชีได้</span>
                     <?php endif; ?>
                 </div>
-
-                <?php if (!empty($ms_accounts)): ?>
-                <div class="space-y-2 pt-3 border-t border-gray-100">
-                    <div class="flex items-center justify-between gap-3 bg-gray-50/70 border border-gray-200/80 rounded-2xl p-2.5 sm:px-4">
-                        <div class="flex items-center gap-2.5 flex-1">
-                            <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
-                            <input type="text"
-                                   id="msEmailSearchInput"
-                                   oninput="filterMsEmailList(this.value)"
-                                   placeholder="พิมพ์ค้นหาอีเมล Hotmail/Outlook..."
-                                   class="w-full bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none placeholder-gray-400 font-medium">
-                            <button type="button"
-                                    id="clearMsEmailSearchBtn"
-                                    onclick="clearMsEmailSearch()"
-                                    class="hidden text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded-full hover:bg-gray-200/60 transition-all">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                        <span id="msEmailSearchCount" class="text-[11px] font-bold text-gray-400 whitespace-nowrap bg-white px-2.5 py-1 rounded-xl border border-gray-100 shadow-xs">
-                            <?php echo count($ms_accounts); ?> รายการ
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div id="noMsEmailSearchResult" class="hidden col-span-full text-center py-6 text-gray-400 text-xs font-medium">
-                            <i class="fa-solid fa-magnifying-glass text-gray-300 text-xl mb-1 block"></i>
-                            ไม่พบอีเมลที่ตรงกับคำค้นหา
-                        </div>
-                        <?php foreach ($ms_accounts as $ms_acc): $ms_active = isset($ms_acc['active']) ? (bool)$ms_acc['active'] : true; ?>
-                        <div class="ms-email-card border rounded-xl p-3 flex items-center justify-between gap-2 <?php echo $ms_active ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/60'; ?>" data-email="<?php echo htmlspecialchars(strtolower($ms_acc['email'])); ?>">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <i class="fa-brands fa-microsoft text-blue-600"></i>
-                                <span class="text-xs font-bold text-gray-800 truncate"><?php echo htmlspecialchars($ms_acc['email']); ?></span>
-                            </div>
-                            <div class="flex items-center gap-1.5 flex-shrink-0">
-                                <?php echo nf_buttons_html($config, $ms_acc['email']); ?>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" <?php echo $ms_active ? 'checked' : ''; ?> onchange="toggleEmailActive('<?php echo htmlspecialchars($ms_acc['id']); ?>', this.checked)" class="sr-only peer">
-                                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
-                                <button onclick="deleteEmail('<?php echo htmlspecialchars($ms_acc['id']); ?>')" class="w-7 h-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-all">
-                                    <i class="fa-regular fa-trash-can text-xs"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
-
 
 
         <!-- ========================================== -->
@@ -2078,12 +2026,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             input.value = '';
         }
         function filterEmailKind(kind) {
-            document.querySelectorAll('[data-kind-chip]').forEach((b) => {
-                const on = b.dataset.kindChip === kind;
-                b.className = 'text-[11px] font-bold px-3 py-1.5 rounded-full border ' + (on ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200');
-            });
+            document.querySelectorAll('[data-kind-chip]').forEach((b) => b.classList.toggle('active', b.dataset.kindChip === kind));
             document.querySelectorAll('.email-card').forEach((card) => {
-                card.classList.toggle('kind-hidden', kind !== 'all' && card.dataset.kind !== kind);
+                const show = kind === 'all' || card.dataset.kind === kind || ('app:' + card.dataset.app) === kind;
+                card.classList.toggle('kind-hidden', !show);
             });
         }
 
