@@ -45,6 +45,17 @@ $config_path = __DIR__ . '/config.json';
 $config_data = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
 if (!is_array($config_data)) $config_data = [];
 
+// อีเมลที่ร้านจัดหมวดแอปไว้ ขอรหัสได้เฉพาะแอปนั้น (ดู extras.php)
+$locked_app = email_app_lock($config_data, $email, $app_name);
+if ($locked_app !== '') {
+    echo json_encode([
+        'success' => false,
+        'locked'  => true,
+        'message' => "อีเมลนี้ใช้ขอรหัสได้เฉพาะแอป $locked_app — กรุณากดย้อนกลับแล้วเลือกแอป $locked_app ค่ะ"
+    ]);
+    exit;
+}
+
 $maily_api_url = "https://api.maily.space/mail/public/mails";
 $maily_tokens = [];
 if (isset($config_data['api_providers']) && is_array($config_data['api_providers'])) {

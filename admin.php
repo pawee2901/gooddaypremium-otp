@@ -189,6 +189,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : ('รหัส Netflix ' . ($f === 'four' ? '4' : '6') . ' หลัก: ' . ($on ? 'เปิด' : 'ปิด') . ' ทุกอีเมลแล้ว'));
     }
 
+    // --- หมวดแอปของอีเมล (all = ทุกแอป) — ลูกค้าขอรหัสได้เฉพาะแอปของหมวด ---
+    if ($action === 'set_email_app') {
+        header('Content-Type: application/json');
+        $id = trim($_POST['id'] ?? '');
+        $aid = trim($_POST['app_id'] ?? 'all');
+        if ($aid !== 'all' && !in_array($aid, array_column($config['apps'] ?? [], 'id'), true)) $json_out(false, 'ไม่พบแอปนี้');
+        $found = false;
+        $ok = cfg_update(function ($c) use ($id, $aid, &$found) {
+            foreach (($c['imap_emails'] ?? []) as $i => $item) {
+                if (($item['id'] ?? '') === $id) { $c['imap_emails'][$i]['app_id'] = $aid; $found = true; break; }
+            }
+            return $c;
+        });
+        if (!$found) $json_out(false, 'ไม่พบอีเมลนี้');
+        $json_out($ok !== false, $ok === false ? 'บันทึกไม่สำเร็จ' : 'ย้ายหมวดอีเมลเรียบร้อยแล้ว');
+    }
+
     // --- PIN 6 หลักของกล่อง Maily (ว่าง = ลบ) ---
     if ($action === 'save_maily_pin') {
         header('Content-Type: application/json');
@@ -982,6 +999,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                             </button>
                             <?php endif; ?>
                             <?php echo nf_buttons_html($config, $item['email']); ?>
+                            <select onchange="setEmailApp('<?php echo $id_attr; ?>', this.value)" title="หมวดแอปของอีเมลนี้ — ลูกค้าขอรหัสได้เฉพาะแอปนี้ (ทุกแอป = ไม่จำกัด)"
+                                    class="text-[10px] font-bold px-2 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 outline-none max-w-[140px]">
+                                <option value="all">ทุกแอป</option>
+                                <?php foreach (($config['apps'] ?? []) as $opt_app): if (empty($opt_app['id'])) continue; ?>
+                                <option value="<?php echo htmlspecialchars($opt_app['id']); ?>" <?php echo ($item['app_id'] ?? 'all') === $opt_app['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($opt_app['name'] ?? ''); ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <?php endforeach; endif; ?>
@@ -1316,6 +1340,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
                 <input type="hidden" id="emailKindInput" value="gmail">
                 <p class="text-xs text-gray-400" id="emailModalHint">สำหรับ Gmail เท่านั้น (Hotmail/Outlook ใช้ปุ่ม "เชื่อมต่อผ่าน Microsoft" แทนแล้วค่ะ)</p>
 
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-gray-700">หมวดแอป <span class="text-gray-400 font-medium">— ขอรหัสได้เฉพาะแอปนี้</span></label>
+                    <select id="emailAppInput" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs bg-white focus:ring-2 focus:ring-purple-600 outline-none">
+                        <option value="all">ทุกแอป</option>
+                        <?php foreach (($config['apps'] ?? []) as $opt_app): if (empty($opt_app['id'])) continue; ?>
+                        <option value="<?php echo htmlspecialchars($opt_app['id']); ?>"><?php echo htmlspecialchars($opt_app['name'] ?? ''); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
                 <div class="space-y-1.5 hidden" id="mailyPinContainer">
                     <label class="text-xs font-bold text-gray-700">PIN กล่อง Maily (6 หลัก) <span class="text-gray-400 font-medium">— ถ้าตั้งไว้ใน maily.space</span></label>
                     <input type="password" id="emailMailyPinInput" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="เช่น 123456"
@@ -1592,6 +1626,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             formData.append('host', kind === 'maily' ? '' : host);
             formData.append('port', kind === 'maily' ? '443' : port);
             if (kind === 'maily') formData.append('maily_pin', mailyPin);
+            formData.append('app_id', document.getElementById('emailAppInput').value || 'all');
 
             try {
                 const res = await fetch('admin.php?action=add_imap_email', { method: 'POST', body: formData });
@@ -1980,6 +2015,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'connect_microsoft') {
             if (data.success) { showNotification(data.message); setTimeout(() => window.location.reload(), 800); }
         }
         function toggleNf(email, f) { reloadAfter('nf_toggle', { email, f }); }
+        function setEmailApp(id, app_id) { reloadAfter('set_email_app', { id, app_id }); }
         function bulkNf(f, on) {
             if (!confirm((on ? 'เปิด' : 'ปิด') + 'รหัส Netflix ' + (f === 'four' ? '4' : '6') + ' หลัก ทุกอีเมล?')) return;
             reloadAfter('nf_bulk', { f, on: on ? '1' : '0' });

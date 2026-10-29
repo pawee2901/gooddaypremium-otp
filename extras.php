@@ -141,6 +141,28 @@ function maily_fetch_list($api_url, $query_params, $email, $tokens, $pin) {
     return [false, 0, ''];
 }
 
+// ---------------------------------------------------------------- หมวดแอปของอีเมล
+
+/**
+ * อีเมลของร้านที่จัดหมวดแอปไว้ → ขอรหัสได้เฉพาะแอปนั้น
+ * คืนชื่อแอปที่อีเมลนี้ใช้ได้ ถ้าลูกค้าเลือกแอปอื่น ('' = ไม่จำกัด: ทุกแอป / ไม่ใช่อีเมลของร้าน / แอปของหมวดถูกปิดหรือลบไปแล้ว)
+ */
+function email_app_lock($config, $email, $app_name) {
+    $email = strtolower(trim((string)$email));
+    foreach (($config['imap_emails'] ?? []) as $item) {
+        if (strtolower(trim($item['email'] ?? '')) !== $email) continue;
+        $aid = (string)($item['app_id'] ?? 'all');
+        if ($aid === '' || $aid === 'all') return '';
+        foreach (($config['apps'] ?? []) as $app) {
+            if (($app['id'] ?? '') !== $aid) continue;
+            if (isset($app['active']) && !$app['active']) return '';
+            return strcasecmp(trim($app['name'] ?? ''), trim((string)$app_name)) === 0 ? '' : (string)$app['name'];
+        }
+        return '';
+    }
+    return '';
+}
+
 // ---------------------------------------------------------------- Netflix 4 / 6 หลัก
 
 // four = หารหัส 4 หลักก่อน (ยืนยันทีวี/ครัวเรือน) · six = ให้ลูกค้าเห็นรหัส 6 หลัก — ยังไม่เคยตั้ง: 4 ปิด · 6 เปิด
@@ -213,7 +235,7 @@ function discord_post($url, $title, $description, $color) {
 /** แจ้งร้านทาง Discord เมื่อลูกค้าขอรหัส (ไม่ส่งตัวรหัสออกไป) — "ยังไม่พบ" ของอีเมลเดียวกันแจ้งได้ 1 ครั้ง / 10 นาที */
 function otp_notify($config, $email, $app_name, $resp) {
     $hook = $config['discord_webhook'] ?? '';
-    if (!discord_webhook_ok($hook) || $email === '') return;
+    if (!discord_webhook_ok($hook) || $email === '' || !empty($resp['locked'])) return;
     $found = (!empty($resp['success']) && !empty($resp['emails']) && is_array($resp['emails'])) ? count($resp['emails']) : 0;
     if ($found === 0) {
         $mark = sys_get_temp_dir() . '/otp_notify_' . md5(cfg_path() . '|' . strtolower($email));
